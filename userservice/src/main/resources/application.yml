@@ -1,7 +1,5 @@
 server:
   port: ${USER_PORT:8082}
-  netty:
-    connection-timeout: 30s
   shutdown: graceful
 
 spring:
