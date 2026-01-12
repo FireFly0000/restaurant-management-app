@@ -1,35 +1,18 @@
 server:
-  port: 8080
+  port: ${GATEWAY_PORT:8081}
   netty:
     connection-timeout: 30s
+  shutdown: graceful
 
 spring:
   application:
-    name: api-gateway
+    name: ${GATEWAY_APPLICATION_NAME:api-gateway}
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
   cloud:
     gateway:
       # Global CORS configuration
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowed-origins:
-              - "http://localhost:3000"
-              - "http://localhost:8080"
-            allowed-methods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - PATCH
-              - OPTIONS
-            allowed-headers:
-              - "*"
-            allow-credentials: true
-            max-age: 3600
-
       # Default filters applied to all routes
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
@@ -44,79 +27,97 @@ spring:
             fallbackUri: forward:/fallback
 
       # Route definitions for downstream services
-      routes:
-        # User Service Routes
-        - id: user-service
-          uri: lb://user-service
-          predicates:
-            - Path=/api/v1/users/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: userServiceCircuitBreaker
-                fallbackUri: forward:/fallback/user
-            - RewritePath=/api/v1/users/(?<segment>.*), /api/users/${segment}
-            - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
-            - name: Retry
-              args:
-                retries: 3
-                statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
-                methods: GET
-                backoff:
-                  firstBackoff: 50ms
-                  maxBackoff: 500ms
-                  factor: 2
-                  basedOnPreviousValue: false
-
-        # Auth Service Routes
-        - id: auth-service
-          uri: lb://auth-service
-          predicates:
-            - Path=/api/v1/auth/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: authServiceCircuitBreaker
-                fallbackUri: forward:/fallback/auth
-            - RewritePath=/api/v1/auth/(?<segment>.*), /api/auth/${segment}
-            - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
-            - name: Retry
-              args:
-                retries: 2
-                statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
-                methods: GET, POST
-                backoff:
-                  firstBackoff: 100ms
-                  maxBackoff: 1000ms
-
-        # Public Auth Routes (no authentication required)
-        - id: auth-public
-          uri: lb://auth-service
-          predicates:
-            - Path=/api/v1/auth/login, /api/v1/auth/register, /api/v1/auth/refresh
-          filters:
-            - RewritePath=/api/v1/auth/(?<segment>.*), /api/auth/${segment}
-
-        # Health Check Routes
-        - id: user-service-health
-          uri: lb://user-service
-          predicates:
-            - Path=/health/user
-          filters:
-            - RewritePath=/health/user, /actuator/health
-
-        - id: auth-service-health
-          uri: lb://auth-service
-          predicates:
-            - Path=/health/auth
-          filters:
-            - RewritePath=/health/auth, /actuator/health
-
       # Discovery client integration
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
+      server:
+        webflux:
+          routes:
+            # User Service Routes
+                    - id: user-service
+                      uri: lb://user-service
+                      predicates:
+                        - Path=/api/v1/users/**
+                      filters:
+                        - name: CircuitBreaker
+                          args:
+                            name: userServiceCircuitBreaker
+                            fallbackUri: forward:/fallback/user
+                        - RewritePath=/api/v1/users/(?<segment>.*), /api/users/${segment}
+                        - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
+                        - name: Retry
+                          args:
+                            retries: 3
+                            statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
+                            methods: GET
+                            backoff:
+                              firstBackoff: 50ms
+                              maxBackoff: 500ms
+                              factor: 2
+                              basedOnPreviousValue: false
+
+                    # Auth Service Routes
+                    - id: auth-service
+                      uri: lb://auth-service
+                      predicates:
+                        - Path=/api/v1/auth/**
+                      filters:
+                        - name: CircuitBreaker
+                          args:
+                            name: authServiceCircuitBreaker
+                            fallbackUri: forward:/fallback/auth
+                        - RewritePath=/api/v1/auth/(?<segment>.*), /api/auth/${segment}
+                        - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
+                        - name: Retry
+                          args:
+                            retries: 2
+                            statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
+                            methods: GET, POST
+                            backoff:
+                              firstBackoff: 100ms
+                              maxBackoff: 1000ms
+
+                    # Public Auth Routes (no authentication required)
+                    - id: auth-public
+                      uri: lb://auth-service
+                      predicates:
+                        - Path=/api/v1/auth/login, /api/v1/auth/register, /api/v1/auth/refresh
+                      filters:
+                        - RewritePath=/api/v1/auth/(?<segment>.*), /api/auth/${segment}
+
+                    # Health Check Routes
+                    - id: user-service-health
+                      uri: lb://user-service
+                      predicates:
+                        - Path=/health/user
+                      filters:
+                        - RewritePath=/health/user, /actuator/health
+
+                    - id: auth-service-health
+                      uri: lb://auth-service
+                      predicates:
+                        - Path=/health/auth
+                      filters:
+                        - RewritePath=/health/auth, /actuator/health
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                          allowed-origins:
+                            - "${FRONTEND_URL:http://localhost:3000}"
+                            - "http://localhost:8080"
+                          allowed-methods:
+                            - GET
+                            - POST
+                            - PUT
+                            - DELETE
+                            - PATCH
+                            - OPTIONS
+                          allowed-headers:
+                            - "*"
+                          allow-credentials: true
+                          max-age: 3600
 
   # Redis configuration for rate limiting and caching
   data:
@@ -135,8 +136,11 @@ spring:
 
 # Dubbo Configuration for gRPC
 dubbo:
+  config-center:
+    address: none
+
   application:
-    name: api-gateway
+    name: ${GATEWAY_APPLICATION_NAME}
     qos-enable: false
 
   registry:
@@ -144,7 +148,9 @@ dubbo:
     username: ${NACOS_USERNAME:nacos}
     password: ${NACOS_PASSWORD:nacos}
     parameters:
-      namespace: ${NACOS_NAMESPACE:public}
+      namespace: ${NACOS_NAMESPACE:dev}
+    use-as-config-center: false
+    use-as-metadata-center: false
 
   protocol:
     name: tri
@@ -155,15 +161,6 @@ dubbo:
     timeout: 30000
     retries: 2
     loadbalance: roundrobin
-
-# Nacos Discovery Configuration
-spring.cloud.nacos:
-  discovery:
-    server-addr: ${NACOS_HOST:localhost}:${NACOS_PORT:8848}
-    username: ${NACOS_USERNAME:nacos}
-    password: ${NACOS_PASSWORD:nacos}
-    namespace: ${NACOS_NAMESPACE:public}
-    enabled: true
 
 # Resilience4j Circuit Breaker Configuration
 resilience4j:
@@ -194,9 +191,9 @@ resilience4j:
 
 # JWT Configuration
 jwt:
-  secret: ${JWT_SECRET:your-256-bit-secret-key-for-jwt-token-signing-minimum-32-chars}
-  access-token-expiration: 3600000  # 1 hour in milliseconds
-  refresh-token-expiration: 604800000  # 7 days in milliseconds
+  secret: ${JWT_SECRET}
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION}  # 1 hour in milliseconds
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION}  # 7 days in milliseconds
 
 # Actuator Configuration
 management:
@@ -209,18 +206,19 @@ management:
     health:
       show-details: when_authorized
     gateway:
-      enabled: true
+      access: none
   health:
     circuitbreakers:
       enabled: true
     redis:
       enabled: true
   metrics:
-    export:
-      prometheus:
-        enabled: true
     tags:
       application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 # Logging Configuration
 logging:
