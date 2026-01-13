@@ -1,21 +1,21 @@
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:${POSTGRES_VERSION}
+    image: postgres:${PG_VERSION}
     container_name: restaurant-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_MASTER_USERNAME}
-      POSTGRES_PASSWORD: ${DB_MASTER_PASSWORD}
+      POSTGRES_DB: ${PG_DB_NAME}
+      POSTGRES_USER: ${PG_DB_MASTER_USERNAME}
+      POSTGRES_PASSWORD: ${PG_DB_MASTER_PASSWORD}
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "${DB_PORT}:5432"
+      - "${PG_DB_PORT}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-scripts/postgres:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U ${PG_DB_MASTER_USERNAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -113,23 +113,31 @@ services:
       - "${NACOS_PORT}:8848"
       - "9848:9848"
       - "9849:9849"
-      - "${NACOS_WEB_PORT}:8080" # Map port console ra biến môi trường
+      - "${NACOS_WEB_PORT}:8080"
     environment:
       MODE: standalone
       PREFER_HOST_MODE: hostname
-      SPRING_DATASOURCE_PLATFORM: ""
       NACOS_AUTH_ENABLE: "true"
       NACOS_AUTH_TOKEN: "${NACOS_AUTH_TOKEN}"
       NACOS_AUTH_IDENTITY_KEY: serverIdentity
       NACOS_AUTH_IDENTITY_VALUE: security
+      SPRING_DATASOURCE_PLATFORM: mysql
+      MYSQL_SERVICE_HOST: mysql-nacos
+      MYSQL_SERVICE_PORT: 3306
+      MYSQL_SERVICE_DB_NAME: ${MYSQL_DB_NAME}
+      MYSQL_SERVICE_USER: ${MYSQL_DB_USER}
+      MYSQL_SERVICE_PASSWORD: ${MYSQL_DB_PASSWORD}
+      MYSQL_SERVICE_DB_PARAM: characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
+
       JVM_XMS: ${NACOS_JVM_XMS}
       JVM_XMX: ${NACOS_JVM_XMX}
       JVM_XMN: 128m
     volumes:
       - nacos_data:/home/nacos/data
       - nacos_logs:/home/nacos/logs
+    depends_on:
+      - mysql-nacos
     healthcheck:
-      # Fix lại healthcheck cho đúng port API 8848
       test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/v1/console/health/readiness"]
       interval: 30s
       timeout: 10s
@@ -137,6 +145,29 @@ services:
       start_period: 60s
     networks:
       - restaurant-network
+
+  mysql-nacos:
+    image: mysql:${MYSQL_VERSION}
+    container_name: restaurant-nacos-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DB_NAME}
+      MYSQL_USER: ${MYSQL_DB_USER}
+      MYSQL_PASSWORD: ${MYSQL_DB_PASSWORD}
+    ports:
+      - "${MYSQL_DB_PORT}:3306"
+    volumes:
+      - mysql_nacos_data:/var/lib/mysql
+      - ./init-scripts/nacos:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - restaurant-network
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
@@ -148,6 +179,8 @@ volumes:
   nacos_data:
     driver: local
   nacos_logs:
+    driver: local
+  mysql_nacos_data:
     driver: local
 
 networks:

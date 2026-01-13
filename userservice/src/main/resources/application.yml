@@ -10,9 +10,9 @@ spring:
 
   # Database Configuration (PostgreSQL - shared database)
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5431}/${DB_NAME:restaurant_db}
-    username: ${DB_USERNAME:res_admin}
-    password: ${DB_PASSWORD:Abc@1234}
+    url: jdbc:postgresql://${PG_DB_HOST:localhost}:${PG_DB_PORT:5431}/${PG_DB_NAME:restaurant_db}
+    username: ${PG_DB_USERNAME:res_admin}
+    password: ${PG_DB_PASSWORD:Abc@1234}
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: AuthServiceHikariPool
@@ -61,7 +61,7 @@ spring:
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
       acks: all
       retries: 3
       properties:
@@ -78,7 +78,7 @@ spring:
       group-id: user-service-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
       enable-auto-commit: false
       properties:
         spring.json.trusted.packages: com.restaurant.*

@@ -9,9 +9,9 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:restaurant_db}
-    username: ${DB_USERNAME:res_admin}
-    password: ${DB_PASSWORD:Abc@1234}
+    url: jdbc:postgresql://${PG_DB_HOST:localhost}:${PG_DB_PORT:5432}/${PG_DB_NAME:restaurant_db}
+    username: ${PG_DB_USERNAME:res_admin}
+    password: ${PG_DB_PASSWORD:Abc@1234}
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: AuthServiceHikariPool
