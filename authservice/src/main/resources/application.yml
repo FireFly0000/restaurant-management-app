@@ -117,7 +117,7 @@ dubbo:
 
   protocol:
     name: tri
-    port:
+    port: ${AUTH_DUBBO_PORT:20881}
 
   consumer:
     check: false

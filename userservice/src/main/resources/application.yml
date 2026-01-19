@@ -63,12 +63,13 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
       acks: all
-      retries: 3
+      retries: 0
       properties:
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
         retry.backoff.ms: 1000
-        delivery.timeout.ms: 120000
+        delivery.timeout.ms: 10000
+        request.timeout.ms: 10000
         linger.ms: 5
         batch.size: 16384
         buffer.memory: 33554432
@@ -118,7 +119,7 @@ dubbo:
 
   protocol:
     name: tri
-    port:
+    port: ${USER_DUBBO_PORT:20882}
 
   consumer:
     check: false
@@ -177,3 +178,12 @@ app:
     cache:
       ttl-seconds: 3600
       prefix: "user:"
+    # Outbox settings
+    outbox:
+      core-pool-size: 5
+      max-pool-size: 20
+      queue-capacity: 100
+      thread-name-prefix: "UserOutboxWorker-"
+      batch-size: 50
+      max_retries: 3
+

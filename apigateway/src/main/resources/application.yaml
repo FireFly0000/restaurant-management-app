@@ -154,7 +154,7 @@ dubbo:
 
   protocol:
     name: tri
-    port:
+    port: ${GATEWAY_DUBBO_PORT:20880}
 
   consumer:
     check: false

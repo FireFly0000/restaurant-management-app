@@ -1,7 +1,8 @@
 package com.restaurant.commons.enums;
 
 public enum OutboxStatus {
-    NEW,
+    PENDING,
     SENT,
-    FAILED
+    RETRY,
+    FAILED,
 }
