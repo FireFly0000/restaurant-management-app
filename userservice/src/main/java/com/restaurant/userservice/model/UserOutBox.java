@@ -1,7 +1,8 @@
 package com.restaurant.userservice.model;
 
-import com.restaurant.commons.enums.OutboxStatus;
+import com.restaurant.commons.core.enums.OutboxStatus;
 import jakarta.persistence.*;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -12,6 +13,7 @@ import java.util.UUID;
 })
 public class UserOutBox {
     @Id
+    @UuidGenerator(style = UuidGenerator.Style.TIME)
     private UUID id;
     private String topic;
     private String key;
@@ -98,9 +100,6 @@ public class UserOutBox {
 
     @PrePersist
     public void prePersist(){
-        if(id == null){
-            id = UUID.randomUUID();
-        }
         createdAt = Instant.now();
     }
 }

@@ -1,8 +1,9 @@
-package com.restaurant.userservice.module.useroutbox;
+package com.restaurant.userservice.core.worker;
 
 import com.restaurant.userservice.config.UserProperties;
 import com.restaurant.userservice.model.UserOutBox;
-import com.restaurant.userservice.module.useroutbox.repository.UserOutboxRepository;
+import com.restaurant.userservice.core.repository.IUserOutboxRepository;
+import com.restaurant.userservice.core.processor.UserOutboxProcessor;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,7 @@ public class UserOutboxWorker {
     private final UserOutboxProcessor _processor;
     private final UserProperties _userProperties;
     private final TransactionTemplate _transTemplate;
-    private final UserOutboxRepository _repo;
+    private final IUserOutboxRepository _repo;
 
     private final AtomicBoolean isShuttingDown = new AtomicBoolean(false);
     private final static Logger _log = LoggerFactory.getLogger(UserOutboxWorker.class);
@@ -35,7 +36,7 @@ public class UserOutboxWorker {
             UserOutboxProcessor processor,
             UserProperties userProperties,
             TransactionTemplate transTemplate,
-            UserOutboxRepository repo
+            IUserOutboxRepository repo
     ){
         this._executor = executor;
         this._processor = processor;

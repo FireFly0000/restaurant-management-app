@@ -1,7 +1,6 @@
-package com.restaurant.commons.dtos;
+package com.restaurant.commons.core.dtos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
 import lombok.experimental.SuperBuilder;
 
 @SuperBuilder

@@ -1,7 +1,7 @@
 package com.restaurant.userservice.exception;
 
 import com.restaurant.commons.constant.Constant;
-import com.restaurant.commons.dtos.ApiErrorResponse;
+import com.restaurant.commons.core.dtos.ApiErrorResponse;
 import com.restaurant.commons.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;

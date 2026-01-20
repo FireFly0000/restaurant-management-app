@@ -1,10 +1,10 @@
-package com.restaurant.userservice.module.useroutbox;
+package com.restaurant.userservice.core.processor;
 
-import com.restaurant.commons.enums.OutboxStatus;
+import com.restaurant.commons.core.enums.OutboxStatus;
 import com.restaurant.userservice.config.UserProperties;
 import com.restaurant.userservice.core.kafka.KafkaProducerWrapper;
 import com.restaurant.userservice.model.UserOutBox;
-import com.restaurant.userservice.module.useroutbox.repository.UserOutboxRepository;
+import com.restaurant.userservice.core.repository.IUserOutboxRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15,14 +15,14 @@ import java.time.Instant;
 
 @Service
 public class UserOutboxProcessor {
-    private final UserOutboxRepository _repo;
+    private final IUserOutboxRepository _repo;
     private final KafkaProducerWrapper _kafkaWrapper;
     private final UserProperties _userProperties;
 
     private final static Logger _log = LoggerFactory.getLogger(UserOutboxProcessor.class);
 
     public UserOutboxProcessor(
-            UserOutboxRepository repo,
+            IUserOutboxRepository repo,
             KafkaProducerWrapper kafkaWrapper,
             UserProperties userProperties
     ){

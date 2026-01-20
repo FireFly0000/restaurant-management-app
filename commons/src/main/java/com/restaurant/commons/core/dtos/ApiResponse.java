@@ -1,4 +1,4 @@
-package com.restaurant.commons.dtos;
+package com.restaurant.commons.core.dtos;
 
 import lombok.Builder;
 import lombok.experimental.SuperBuilder;

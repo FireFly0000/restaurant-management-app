@@ -1,4 +1,4 @@
-package com.restaurant.userservice.module.useroutbox.repository;
+package com.restaurant.userservice.core.repository;
 
 import com.restaurant.userservice.model.UserOutBox;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface UserOutboxRepository extends JpaRepository<UserOutBox, UUID> {
+public interface IUserOutboxRepository extends JpaRepository<UserOutBox, UUID> {
     @Query(value = """
         SELECT * FROM user_outbox 
         WHERE status IN ('PENDING', 'RETRY') 

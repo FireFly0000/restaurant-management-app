@@ -1,7 +1,5 @@
-package com.restaurant.userservice.module.user.integration.kafka;
+package com.restaurant.userservice.core.kafka;
 
-import com.restaurant.userservice.core.kafka.KafkaProducerWrapper;
-import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
