@@ -1,8 +1,29 @@
 package com.restaurant.commons.constant;
 
+import org.apache.commons.lang3.tuple.Pair;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 public class Constant {
+    /* REQUEST HEADER / gRPC METADATA */
+    public static final String H_USER_ID = "X-User-Id";
     /* COMMON */
     public static final String DEFAULT_ZONE = "Asia/Ho_Chi_Minh";
+    public static final String USER_ID = "USER_ID";
+    public static final String API_V1_PREFIX = "/api/v1";
+    public static final String API_V2_PREFIX = "/api/v2";
+    public static final String HTTP_POST = "POST";
+    public static final String HTTP_GET = "GET";
+    public static final String HTTP_PUT = "PUT";
+    public static final String HTTP_DELETE = "DELETE";
+    public static final String HTTP_PATCH = "PATCH";
+
+    /* PUBLIC API */
+    public static final List<Pair<String, String>> PUBLIC_ENDPOINT = Collections.singletonList(
+            Pair.of(String.format("%s/auth/sign-in", API_V1_PREFIX), HTTP_POST)
+    );
 
     /* ERROR CODE */
     // 0xxx: SYSTEM / SERVER ERROR
@@ -30,5 +51,5 @@ public class Constant {
     public static final String RES3004 = "RES3003"; // Action Isn't Allowed
 
     /* TASK */
-    
+
 }

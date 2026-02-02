@@ -26,6 +26,8 @@ spring:
   # JPA Configuration
   jpa:
     hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
       ddl-auto: update
     show-sql: false
     properties:
