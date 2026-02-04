@@ -5,7 +5,9 @@ import com.restaurant.commons.constant.Constant;
 import io.jsonwebtoken.Claims;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -21,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @Component
-public class JwtFilter extends AbstractGatewayFilterFactory<JwtFilter> {
+public class JwtFilter implements GlobalFilter, Ordered {
 
     private final IJwtService _jwtService;
     private static final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -30,38 +32,11 @@ public class JwtFilter extends AbstractGatewayFilterFactory<JwtFilter> {
         this._jwtService = jwtService;
     }
 
-    @Override
-    public GatewayFilter apply(JwtFilter config) {
-        return ((exchange, chain) -> {
-            if(isPublicRequest(exchange.getRequest())) {
-                return chain.filter(exchange);
-            }
-
-            String auth = exchange.getRequest()
-                    .getHeaders()
-                    .getFirst(HttpHeaders.AUTHORIZATION);
-
-            if(auth == null || !auth.startsWith("Bearer ")) {
-                return unauthorized(exchange);
-            }
-
-            String token = auth.substring(7);
-
-            if(!_jwtService.isValidToken(token)){
-                return unauthorized(exchange);
-            }
-
-            UUID userId = _jwtService.extractClaim(token, Constant.USER_ID, UUID.class);
-
-            ServerHttpRequest newReq = exchange.getRequest().mutate()
-                    .header(Constant.H_USER_ID, userId.toString())
-                    .headers(h -> h.remove(HttpHeaders.AUTHORIZATION))
-                    .build();
-
-            return chain.filter(exchange.mutate().request(newReq).build());
-        });
-    }
-
+    /**
+     *
+     * @param request ServerHttpRequest
+     * @return boolean
+     */
     private static boolean isPublicRequest(ServerHttpRequest request){
         String requestPath = request.getPath().pathWithinApplication().value();
         String requestMethod = request.getMethod().name();
@@ -73,6 +48,11 @@ public class JwtFilter extends AbstractGatewayFilterFactory<JwtFilter> {
                 );
     }
 
+    /**
+     *
+     * @param exchange ServerWebExchange
+     * @return Mono<Void>
+     */
     private Mono<Void> unauthorized(ServerWebExchange exchange) {
         ServerHttpResponse response = exchange.getResponse();
 
@@ -91,6 +71,51 @@ public class JwtFilter extends AbstractGatewayFilterFactory<JwtFilter> {
         DataBuffer buffer = response.bufferFactory().wrap(bytes);
 
         return response.writeWith(Mono.just(buffer));
+    }
+
+    /**
+     * Filter implementation
+     * @param exchange ServerWebExchange
+     * @param chain GatewayFilterChain
+     * @return Mono<Void>
+     */
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        if(isPublicRequest(exchange.getRequest())) {
+            return chain.filter(exchange);
+        }
+
+        String auth = exchange.getRequest()
+                .getHeaders()
+                .getFirst(HttpHeaders.AUTHORIZATION);
+
+        if(auth == null || !auth.startsWith("Bearer ")) {
+            return unauthorized(exchange);
+        }
+
+        String token = auth.substring(7);
+
+        if(!_jwtService.isValidToken(token)){
+            return unauthorized(exchange);
+        }
+
+        UUID userId = _jwtService.extractClaim(token, Constant.USER_ID, UUID.class);
+
+        ServerHttpRequest newReq = exchange.getRequest().mutate()
+                .header(Constant.H_USER_ID, userId.toString())
+                .headers(h -> h.remove(HttpHeaders.AUTHORIZATION))
+                .build();
+
+        return chain.filter(exchange.mutate().request(newReq).build());
+    }
+
+    /**
+     *
+     * @return int
+     */
+    @Override
+    public int getOrder() {
+        return -999999;
     }
 
     public static class Config {
