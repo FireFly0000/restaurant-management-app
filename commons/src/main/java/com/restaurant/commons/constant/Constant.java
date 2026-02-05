@@ -9,6 +9,7 @@ import java.util.List;
 public class Constant {
     /* REQUEST HEADER / gRPC METADATA */
     public static final String H_USER_ID = "X-User-Id";
+    public static final String H_FORWARDED_FOR = "X-Forwarded-For";
     /* COMMON */
     public static final String DEFAULT_ZONE = "Asia/Ho_Chi_Minh";
     public static final String USER_ID = "USER_ID";
