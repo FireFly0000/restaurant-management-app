@@ -22,6 +22,9 @@ public class JwtServiceImpl implements IJwtService {
 
     @Override
     public boolean isValidToken(String token) {
+        if(!isValidFormat(token)){
+            return false;
+        }
         return !isTokenExpired(token);
     }
 
@@ -43,6 +46,10 @@ public class JwtServiceImpl implements IJwtService {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    private boolean isValidFormat(String token) {
+        return token != null && !token.isBlank() && token.split("\\.").length == 3;
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> claimsResolver){
