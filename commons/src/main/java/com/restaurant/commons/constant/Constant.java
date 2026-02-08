@@ -9,6 +9,7 @@ import java.util.List;
 public class Constant {
     /* REQUEST HEADER / gRPC METADATA */
     public static final String H_USER_ID = "X-User-Id";
+    public static final String H_FORWARDED_FOR = "X-Forwarded-For";
     /* COMMON */
     public static final String DEFAULT_ZONE = "Asia/Ho_Chi_Minh";
     public static final String USER_ID = "USER_ID";
@@ -19,6 +20,11 @@ public class Constant {
     public static final String HTTP_PUT = "PUT";
     public static final String HTTP_DELETE = "DELETE";
     public static final String HTTP_PATCH = "PATCH";
+    public static final String VN_LANGUAGE = "vi";
+    public static final String VN_COUNTRY = "VN";
+    public static final String UTF_8 = "UTF-8";
+    public static final String SOURCE_MESSAGES_CLASSPATH = "classpath:i18n/messages";
+    public static final String SOURCE_VALIDATIONS_CLASSPATH = "classpath:i18n/validation";
 
     /* PUBLIC API */
     public static final List<Pair<String, String>> PUBLIC_ENDPOINT = Collections.singletonList(

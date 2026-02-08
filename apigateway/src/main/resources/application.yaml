@@ -12,112 +12,259 @@ spring:
 
   cloud:
     gateway:
-      # Global CORS configuration
-      # Default filters applied to all routes
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-        - name: RequestRateLimiter
-          args:
-            redis-rate-limiter.replenishRate: 100
-            redis-rate-limiter.burstCapacity: 200
-            redis-rate-limiter.requestedTokens: 1
-        - name: CircuitBreaker
-          args:
-            name: defaultCircuitBreaker
-            fallbackUri: forward:/fallback
-
-      # Route definitions for downstream services
-      # Discovery client integration
       server:
         webflux:
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+            - name: CircuitBreaker
+              args:
+                name: defaultCircuitBreaker
+                fallbackUri: forward:/fallback
+
           routes:
             # User Service Routes
-                    - id: user-service
-                      uri: lb://user-service
-                      predicates:
-                        - Path=/api/v1/users/**
-                      filters:
-                        - name: CircuitBreaker
-                          args:
-                            name: userServiceCircuitBreaker
-                            fallbackUri: forward:/fallback/user
-                        - RewritePath=/api/v1/users/(?<segment>.*), /api/users/${segment}
-                        - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
-                        - name: Retry
-                          args:
-                            retries: 3
-                            statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
-                            methods: GET
-                            backoff:
-                              firstBackoff: 50ms
-                              maxBackoff: 500ms
-                              factor: 2
-                              basedOnPreviousValue: false
+            - id: user-service
+              uri: lb://user-service
+              predicates:
+                - Path=/api/v1/users/**, /api/v1/follows/**, /api/v1/reviews/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 30 # Requests per second
+                    redis-rate-limiter.burstCapacity: 60 # Maximum number of requests in a burst
+                    redis-rate-limiter.requestedToken: 1 # 1 token per request
+                    key-resolver: "#{@defaultKeyResolver}"
+#                - name: CircuitBreaker
+#                  args:
+#                    name: userServiceCircuitBreaker
+#                    fallbackUri: forward:/fallback/user
+                #- RewritePath=/api/v1/(?<segment>.*), /api/${segment}
+                - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
+                - name: Retry
+                  args:
+                    retries: 3 # Retry 3 times
+                    statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
+                    methods: GET # Just retry with method GET
+                    backoff:
+                      firstBackoff: 50ms # First retry after 50 ms
+                      maxBackoff: 500ms
+                      factor: 2
+                      basedOnPreviousValue: false
 
-                    # Auth Service Routes
-                    - id: auth-service
-                      uri: lb://auth-service
-                      predicates:
-                        - Path=/api/v1/auth/**
-                      filters:
-                        - name: CircuitBreaker
-                          args:
-                            name: authServiceCircuitBreaker
-                            fallbackUri: forward:/fallback/auth
-                        - RewritePath=/api/v1/auth/(?<segment>.*), /api/auth/${segment}
-                        - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
-                        - name: Retry
-                          args:
-                            retries: 2
-                            statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
-                            methods: GET, POST
-                            backoff:
-                              firstBackoff: 100ms
-                              maxBackoff: 1000ms
+            # Auth Service Routes
+            - id: auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/v1/auth/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 30
+                    redis-rate-limiter.requestedToken: 1
+                    key-resolver: "#{@defaultKeyResolver}"
+                - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
+                - name: Retry
+                  args:
+                    retries: 2
+                    statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
+                    methods: GET, POST
+                    backoff:
+                      firstBackoff: 100ms
+                      maxBackoff: 1000ms
+                      factor: 3
+                      basedOnPreviousValue: false
 
-                    # Public Auth Routes (no authentication required)
-                    - id: auth-public
-                      uri: lb://auth-service
-                      predicates:
-                        - Path=/api/v1/auth/login, /api/v1/auth/register, /api/v1/auth/refresh
-                      filters:
-                        - RewritePath=/api/v1/auth/(?<segment>.*), /api/auth/${segment}
+            # Business Service Routes
+            - id: business-service
+              uri: lb://business-service
+              predicates:
+                - Path=/api/v1/business/**, /api/v1/locations/**, /api/v1/location-settings/, /api/v1/business-roles/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 30
+                    redis-rate-limiter.requestedToken: 1
+                    key-resolver: "#{@defaultKeyResolver}"
+                - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
+                    methods: GET
+                    backoff:
+                      firstBackoff: 50ms # First retry after 50 ms
+                      maxBackoff: 500ms
+                      factor: 2
+                      basedOnPreviousValue: false
 
-                    # Health Check Routes
-                    - id: user-service-health
-                      uri: lb://user-service
-                      predicates:
-                        - Path=/health/user
-                      filters:
-                        - RewritePath=/health/user, /actuator/health
+            # Menu Service Routes
+            - id: menu-service
+              uri: lb://menu-service
+              predicates:
+                - Path=/api/v1/categories/**, /api/v1/items/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 30
+                    redis-rate-limiter.requestedToken: 1
+                    key-resolver: "#{@defaultKeyResolver}"
+                - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
+                    methods: GET
+                    backoff:
+                      firstBackoff: 50ms # First retry after 50 ms
+                      maxBackoff: 500ms
+                      factor: 2
+                      basedOnPreviousValue: false
 
-                    - id: auth-service-health
-                      uri: lb://auth-service
-                      predicates:
-                        - Path=/health/auth
-                      filters:
-                        - RewritePath=/health/auth, /actuator/health
-          discovery:
-            locator:
-              enabled: true
-              lower-case-service-id: true
+            # Order Service Routes
+            - id: order-service
+              uri: lb://order-service
+              predicates:
+                - Path=/api/v1/orders/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 10
+                    redis-rate-limiter.burstCapacity: 30
+                    redis-rate-limiter.requestedToken: 1
+                    key-resolver: "#{@defaultKeyResolver}"
+                - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
+                    methods: GET
+                    backoff:
+                      firstBackoff: 50ms # First retry after 50 ms
+                      maxBackoff: 500ms
+                      factor: 2
+                      basedOnPreviousValue: false
+
+            # Promotion Service Routes
+            - id: promotion-service
+              uri: lb://promotion-service
+              predicates:
+                - Path=/api/v1/promotions/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    redis-rate-limiter.requestedToken: 1
+                    key-resolver: "#{@defaultKeyResolver}"
+                - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
+                    methods: GET
+                    backoff:
+                      firstBackoff: 50ms # First retry after 50 ms
+                      maxBackoff: 500ms
+                      factor: 2
+                      basedOnPreviousValue: false
+
+            # Revenue Service Routes
+            - id: revenue-service
+              uri: lb://revenue-service
+              predicates:
+                - Path=/api/v1/revenues/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 20
+                    redis-rate-limiter.burstCapacity: 40
+                    redis-rate-limiter.requestedToken: 1
+                    key-resolver: "#{@defaultKeyResolver}"
+                - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
+                    methods: GET
+                    backoff:
+                      firstBackoff: 50ms # First retry after 50 ms
+                      maxBackoff: 500ms
+                      factor: 2
+                      basedOnPreviousValue: false
+
+            # Notification Service Routes
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/api/v1/notifications/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 30
+                    redis-rate-limiter.burstCapacity: 60
+                    redis-rate-limiter.requestedToken: 1
+                    key-resolver: "#{@defaultKeyResolver}"
+                - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
+                    methods: GET
+                    backoff:
+                      firstBackoff: 50ms # First retry after 50 ms
+                      maxBackoff: 500ms
+                      factor: 2
+                      basedOnPreviousValue: false
+
+            # Payment Service Routes
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=/api/v1/payments/**
+              filters:
+                - name: RequestRateLimiter
+                  args:
+                    redis-rate-limiter.replenishRate: 15
+                    redis-rate-limiter.burstCapacity: 30
+                    redis-rate-limiter.requestedToken: 1
+                    key-resolver: "#{@defaultKeyResolver}"
+                - AddRequestHeader=X-Gateway-Request-Id, ${random.uuid}
+                - name: Retry
+                  args:
+                    retries: 3
+                    statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE
+                    methods: GET
+                    backoff:
+                      firstBackoff: 50ms # First retry after 50 ms
+                      maxBackoff: 500ms
+                      factor: 2
+                      basedOnPreviousValue: false
+
+#         Service Discovery
+#          discovery:
+#            locator:
+#              enabled: true
+#              lower-case-service-id: true
           globalcors:
             cors-configurations:
               '[/**]':
-                          allowed-origins:
-                            - "${FRONTEND_URL:http://localhost:3000}"
-                            - "http://localhost:8080"
-                          allowed-methods:
-                            - GET
-                            - POST
-                            - PUT
-                            - DELETE
-                            - PATCH
-                            - OPTIONS
-                          allowed-headers:
-                            - "*"
-                          allow-credentials: true
-                          max-age: 3600
+                allowed-origins:
+                  - "${FRONTEND_URL:http://localhost:3000}"
+                  - "http://localhost:8080"
+                allowed-methods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - PATCH
+                  - OPTIONS
+                allowed-headers:
+                  - "*"
+                allow-credentials: true
+                max-age: 3600
 
   # Redis configuration for rate limiting and caching
   data:
