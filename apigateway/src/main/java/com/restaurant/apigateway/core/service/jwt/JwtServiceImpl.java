@@ -36,6 +36,19 @@ public class JwtServiceImpl implements IJwtService {
                 .get(key, type);
     }
 
+    @Override
+    public long getTokenTTLMillis(String token){
+        try {
+            Date expiration = extractClaim(token, Claims::getExpiration);
+            long now = System.currentTimeMillis();
+            long ttl = expiration.getTime() - now;
+
+            return Math.max(ttl, 0);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     private Claims extractClaims(String token){
         return Jwts
                 .parser()
