@@ -29,7 +29,7 @@ public class BlackListServiceImpl implements IBackListService {
     }
 
     @Override
-    public void blacklistToken(String token, long ttlSeconds) {
+    public void blacklistToken(String token) {
         cacheService.setWithTTL(
                 this.blacklistPrefix + token,
                 true,
