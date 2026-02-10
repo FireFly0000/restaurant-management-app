@@ -2,7 +2,10 @@ package com.restaurant.apigateway.core.service.blacklist;
 
 import com.restaurant.apigateway.config.ApiGatewayProperties;
 import com.restaurant.apigateway.core.service.jwt.JwtServiceImpl;
+import com.restaurant.apigateway.core.service.redis.RedisServiceImpl;
 import com.restaurant.commons.core.interfaces.ICacheService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import java.util.concurrent.TimeUnit;
@@ -12,6 +15,8 @@ public class BlackListServiceImpl implements IBackListService {
     private final String blacklistPrefix;
     private final ICacheService cacheService;
     private final JwtServiceImpl jwtService;
+
+    private final Logger _log = LoggerFactory.getLogger(BlackListServiceImpl.class);
 
     public BlackListServiceImpl(
             @Qualifier("redisService") ICacheService cacheService,
