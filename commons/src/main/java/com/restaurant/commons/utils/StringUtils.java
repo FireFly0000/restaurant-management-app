@@ -7,6 +7,10 @@ public class  StringUtils extends org.apache.commons.lang3.StringUtils {
     private static final Pattern NON_LATIN = Pattern.compile("[^\\w-]");
     private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
 
+    public static boolean isStringNotEmpty(String str) {
+        return str != null && !str.isBlank();
+    }
+
     public static String toSlug(String input){
         if (StringUtils.isBlank(input)) {
             return "";
