@@ -5,16 +5,20 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.function.Function;
+import com.restaurant.commons.utils.StringUtils;
 
 @Service
 public class JwtServiceImpl implements IJwtService {
 
     private final SecretKey secretKey;
+    private final Logger _log = LoggerFactory.getLogger(JwtServiceImpl.class);
 
     public JwtServiceImpl(ApiGatewayProperties _properties){
         this.secretKey = getSecretKey(_properties.getJwt().getSecret());
@@ -22,6 +26,9 @@ public class JwtServiceImpl implements IJwtService {
 
     @Override
     public boolean isValidToken(String token) {
+        if(!isValidJwtTokenFormat(token)){
+            return false;
+        }
         return !isTokenExpired(token);
     }
 
@@ -50,6 +57,10 @@ public class JwtServiceImpl implements IJwtService {
         }
     }
 
+    public static boolean isValidJwtTokenFormat(String token) {
+        return StringUtils.isStringNotEmpty(token) && token.split("\\.").length == 3;
+    }
+
     private Claims extractClaims(String token){
         return Jwts
                 .parser()
@@ -68,6 +79,7 @@ public class JwtServiceImpl implements IJwtService {
         try{
             return !extractClaim(token, Claims::getExpiration).before(new Date());
         }catch(Exception e){
+            _log.error(e.getMessage(), e.getCause());
             return true;
         }
     }
