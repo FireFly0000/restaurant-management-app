@@ -13,6 +13,7 @@ public class Constant {
     /* COMMON */
     public static final String DEFAULT_ZONE = "Asia/Ho_Chi_Minh";
     public static final String USER_ID = "USER_ID";
+    public static final String EXPIRATION = "exp";
     public static final String API_V1_PREFIX = "/api/v1";
     public static final String API_V2_PREFIX = "/api/v2";
     public static final String HTTP_POST = "POST";

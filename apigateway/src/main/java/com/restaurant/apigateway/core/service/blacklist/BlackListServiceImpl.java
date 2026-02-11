@@ -2,12 +2,15 @@ package com.restaurant.apigateway.core.service.blacklist;
 
 import com.restaurant.apigateway.config.ApiGatewayProperties;
 import com.restaurant.apigateway.core.service.jwt.JwtServiceImpl;
-import com.restaurant.apigateway.core.service.redis.RedisServiceImpl;
+import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.core.interfaces.ICacheService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+
+import java.util.Date;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -40,6 +43,17 @@ public class BlackListServiceImpl implements IBackListService {
                 true,
                 jwtService.getTokenTtlSeconds(token),
                 TimeUnit.SECONDS
+        );
+
+        UUID userId = jwtService.extractClaim(token, Constant.USER_ID, UUID.class);
+        long ttl = jwtService.getTokenTtlSeconds(token);
+        Date expiration = jwtService.extractClaim(token, Constant.EXPIRATION, Date.class);
+
+        _log.info(
+                "JWT added to blacklist. userId={}, expiresAt={}, ttlSeconds={}",
+                userId,
+                expiration,
+                ttl
         );
     }
 }
