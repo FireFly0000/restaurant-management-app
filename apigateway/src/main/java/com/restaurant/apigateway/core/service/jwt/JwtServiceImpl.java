@@ -19,7 +19,7 @@ import com.restaurant.commons.utils.StringUtils;
 public class JwtServiceImpl implements IJwtService {
 
     private final SecretKey secretKey;
-    private final Logger _log = LoggerFactory.getLogger(JwtServiceImpl.class);
+    private static final Logger _log = LoggerFactory.getLogger(JwtServiceImpl.class);
 
     public JwtServiceImpl(ApiGatewayProperties _properties){
         this.secretKey = getSecretKey(_properties.getJwt().getSecret());
@@ -45,7 +45,16 @@ public class JwtServiceImpl implements IJwtService {
     }
 
     public static boolean isValidJwtTokenFormat(String token) {
-        return StringUtils.isStringNotEmpty(token) && token.split("\\.").length == 3;
+        boolean isValid = StringUtils.isStringNotEmpty(token) && token.split("\\.").length == 3;
+
+        if(isValid){
+          _log.info("Token is valid");
+        }
+        else{
+            _log.warn("Invalid JWT Token received");
+        }
+
+        return isValid;
     }
 
     private Claims extractClaims(String token){
