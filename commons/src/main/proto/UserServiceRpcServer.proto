@@ -1,0 +1,29 @@
+
+syntax = "proto3";
+
+package userService;
+option java_multiple_files = true;
+option java_package="com.restaurant.commons.proto";
+option java_outer_classname = "UserServiceProto";
+
+service UserService{
+    //Existence checks
+    rpc ExistsByPhoneNumber(ExistsByPhoneNumberRequest) returns (ExistsResponse);
+    rpc ExistsByEmail(ExistsByEmailRequest) returns (ExistsResponse);
+}
+
+//Request messages
+message ExistsByPhoneNumberRequest {
+    string phone_number = 1;
+}
+
+message ExistsByEmailRequest {
+    string email = 1;
+}
+
+
+//Response messages
+message ExistsResponse {
+    bool exists = 1;
+}
+
