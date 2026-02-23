@@ -1,7 +1,6 @@
 package com.restaurant.apigateway.core.service.jwt;
 
 import com.restaurant.apigateway.config.ApiGatewayProperties;
-import com.restaurant.apigateway.core.service.redis.RedisServiceImpl;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -42,6 +41,20 @@ public class JwtServiceImpl implements IJwtService {
                 .parseSignedClaims(token)
                 .getPayload()
                 .get(key, type);
+    }
+
+    @Override
+    public long getTokenTtlSeconds(String token){
+        try {
+            Date expiration = extractClaim(token, Claims::getExpiration);
+            long now = System.currentTimeMillis();
+            long ttlMillis = expiration.getTime() - now;
+
+            long ttlSeconds = ttlMillis / 1000;
+            return Math.max(ttlSeconds, 0);
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     public static boolean isValidJwtTokenFormat(String token) {
