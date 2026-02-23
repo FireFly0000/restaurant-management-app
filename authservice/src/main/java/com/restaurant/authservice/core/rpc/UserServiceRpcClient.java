@@ -1,26 +1,26 @@
-package com.restaurant.authservice.RpcClients;
+package com.restaurant.authservice.core.rpc;
 
-import com.restaurant.commons.proto.*;
+import com.restaurant.commons.core.rpc.user.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.apache.dubbo.rpc.RpcException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 @Slf4j
-@Component
+@Service
 public class UserServiceRpcClient {
 
     @DubboReference(
             version = "1.0.0",
             group = "user-service",
-            protocol = "tri",           // Triple protocol (gRPC-compatible)
-            timeout = 3000,             // 3 seconds timeout
-            retries = 2,                // Retry 2 times on failure
-            check = false,              // Don't fail on startup if service unavailable
-            loadbalance = "roundrobin"  // Load balancing strategy
+            protocol = "tri",
+            timeout = 3000,
+            retries = 2,
+            check = false
     )
-    private UserServiceGrpc.UserServiceBlockingStub userServiceStub;
+    private UserService userServiceStub;  //
     private final Logger _log = LoggerFactory.getLogger(UserServiceRpcClient.class);
 
     /**
@@ -35,9 +35,9 @@ public class UserServiceRpcClient {
 
             ExistsResponse response = userServiceStub.existsByEmail(request);
             return response.getExists();
-        } catch (Exception e) {
+        } catch (RpcException e) {
             _log.error("Failed to check if email exists: {}", e.getMessage(), e);
-            throw e;
+            return false;
         }
     }
 

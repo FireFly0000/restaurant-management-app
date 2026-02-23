@@ -27,8 +27,9 @@ public class Constant {
     public static final String SOURCE_VALIDATIONS_CLASSPATH = "classpath:i18n/validation";
 
     /* PUBLIC API */
-    public static final List<Pair<String, String>> PUBLIC_ENDPOINT = Collections.singletonList(
-            Pair.of(String.format("%s/auth/sign-in", API_V1_PREFIX), HTTP_POST)
+    public static final List<Pair<String, String>> PUBLIC_ENDPOINT = List.of(
+            Pair.of(String.format("%s/auth/sign-in", API_V1_PREFIX), HTTP_POST),
+            Pair.of(String.format("%s/auth/register", API_V1_PREFIX), HTTP_POST)
     );
 
     /* ERROR CODE */

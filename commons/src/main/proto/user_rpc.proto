@@ -1,15 +1,14 @@
-
 syntax = "proto3";
 
 package userService;
 option java_multiple_files = true;
-option java_package="com.restaurant.commons.proto";
-option java_outer_classname = "UserServiceProto";
+option java_package="com.restaurant.commons.core.rpc.user";
+option java_outer_classname = "UserServiceRpc";
 
 service UserService{
     //Existence checks
-    rpc ExistsByPhoneNumber(ExistsByPhoneNumberRequest) returns (ExistsResponse);
-    rpc ExistsByEmail(ExistsByEmailRequest) returns (ExistsResponse);
+    rpc existsByPhoneNumber(ExistsByPhoneNumberRequest) returns (ExistsResponse);
+    rpc existsByEmail(ExistsByEmailRequest) returns (ExistsResponse);
 }
 
 //Request messages

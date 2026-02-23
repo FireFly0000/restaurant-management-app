@@ -59,7 +59,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public boolean existsByEmail(String email) {
-        return false;
+        return _repo.existsByEmail(email);
     }
 
     @Override
