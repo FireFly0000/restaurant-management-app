@@ -21,10 +21,7 @@ public class Device extends BaseEntity {
     @Id
     @UuidGenerator(style = UuidGenerator.Style.TIME)
     private UUID id;
-
-    @Column(unique = true)
-    private String deviceId;
-
+    private UUID userId;
     private String deviceName;
     private String fcmToken;
     private DevicePlatform platform;

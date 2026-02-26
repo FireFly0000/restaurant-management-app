@@ -3,9 +3,10 @@ package com.restaurant.notification.core.service.sender.dto;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 
 @Data
-@Builder
+@SuperBuilder
 @EqualsAndHashCode(callSuper = false)
 public class SmsPayload extends AbstractNotificationPayload{
     private String phone;

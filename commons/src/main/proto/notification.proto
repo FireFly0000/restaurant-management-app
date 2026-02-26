@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package com.restaurant.commons.core.rpc.notification;
+option java_multiple_files = true;
+option java_package="com.restaurant.commons.core.rpc.notification";
+option java_outer_classname = "UserNotificationRpc";
+
+import "google/protobuf/struct.proto";
+
+message DeviceRegistrationEvent {
+  string user_id = 1;
+  string fcm_token = 2;
+  string platform = 3;
+  string device_name = 4;
+  string os_version = 5;
+  string app_version = 6;
+  string device_model = 7;
+  string manufacture = 8;
+  string language = 9;
+}
+
+message SendEmailEvent {
+  string recipient = 1;
+  string type = 2;
+  optional int64 user_id = 3;
+  int64 recipient_id = 4;
+  google.protobuf.Struct metadata = 5;
+  repeated string to = 6;
+  string subject = 7;
+  string body_text = 8;
+  string body_html = 9;
+  string from = 10;
+  repeated string reply_to = 11;
+  repeated string cc = 12;
+  repeated string bcc = 13;
+}
+
+message SendSmsEvent {
+
+}

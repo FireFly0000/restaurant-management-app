@@ -36,12 +36,13 @@
         <dubbo.version>3.3.6</dubbo.version>
         <nacos.version>3.1.1</nacos.version>
         <spring-kafka.version>3.3.12</spring-kafka.version>
+        <kafka-protobuf-serializer.version>8.1.1</kafka-protobuf-serializer.version>
 
         <!-- Alibaba cloud -->
         <alibaba.version>2025.0.0.0</alibaba.version>
 
         <!-- Protobuf and gRPC Versions -->
-        <protobuf.version>3.25.5</protobuf.version>
+        <protobuf.version>4.32.1</protobuf.version>
         <grpc.version>1.78.0</grpc.version>
         <protobuf-maven-plugin.version>0.6.1</protobuf-maven-plugin.version>
 
@@ -53,6 +54,13 @@
         <lombok.version>1.18.42</lombok.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>confluent</id>
+            <url>https://packages.confluent.io/maven/</url>
+        </repository>
+    </repositories>
 
     <dependencyManagement>
         <dependencies>
@@ -168,6 +176,12 @@
                 <version>${alibaba.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.confluent</groupId>
+                <artifactId>kafka-protobuf-serializer</artifactId>
+                <version>${kafka-protobuf-serializer.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

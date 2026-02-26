@@ -3,11 +3,12 @@ package com.restaurant.notification.core.service.sender.dto;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 
 import java.util.Map;
 
 @Data
-@Builder
+@SuperBuilder
 @EqualsAndHashCode(callSuper = false)
 public class PushPayload extends AbstractNotificationPayload{
     private String title;
