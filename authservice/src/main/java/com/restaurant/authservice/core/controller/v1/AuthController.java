@@ -25,34 +25,27 @@ public class AuthController {
         this._authService = authService;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> testRegister(@RequestBody RegisterRequest request) {
-        _log.info("Testing registration for email: {}", request.getEmail());
+    @PostMapping("/sign-up")
+    public ResponseEntity<Map<String, Object>> signUp(@RequestBody RegisterRequest request) {
+        _log.info("Signup for user with email: {}", request.getEmail());
 
         Map<String, Object> response = new HashMap<>();
 
         try {
             Boolean result = _authService.register(request);
+            response.put("success", true);
+            response.put("message", "Registration successful");
+            return ResponseEntity.ok(response);
 
-            if (result) {
-                response.put("success", true);
-                response.put("message", "Email is available for registration");
-                response.put("email", request.getEmail());
-                response.put("rpcCheckPassed", true);
-                return ResponseEntity.ok(response);
-            } else {
-                response.put("success", false);
-                response.put("message", "Email already exists");
-                response.put("email", request.getEmail());
-                response.put("rpcCheckPassed", false);
-                return ResponseEntity.badRequest().body(response);
-            }
+        } catch (IllegalArgumentException e) {
+            response.put("success", false);
+            response.put("error", e.getMessage());  // "Email already exists" etc.
+            return ResponseEntity.badRequest().body(response);
 
         } catch (Exception e) {
-            _log.error("Registration test failed", e);
+            _log.error("Registration failed", e);
             response.put("success", false);
-            response.put("error", e.getMessage());
-            response.put("rpcCheckPassed", false);
+            response.put("error", "Internal server error");
             return ResponseEntity.status(500).body(response);
         }
     }

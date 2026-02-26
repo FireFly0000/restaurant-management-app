@@ -29,7 +29,7 @@ public class Constant {
     /* PUBLIC API */
     public static final List<Pair<String, String>> PUBLIC_ENDPOINT = List.of(
             Pair.of(String.format("%s/auth/sign-in", API_V1_PREFIX), HTTP_POST),
-            Pair.of(String.format("%s/auth/register", API_V1_PREFIX), HTTP_POST)
+            Pair.of(String.format("%s/auth/sign-up", API_V1_PREFIX), HTTP_POST)
     );
 
     /* ERROR CODE */

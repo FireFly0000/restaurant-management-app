@@ -58,4 +58,31 @@ public class UserServiceRpcClient {
             throw e;
         }
     }
+
+    public boolean createUser(
+            String email,
+            String hashedPassword,
+            String phoneNumber,
+            String firstName,
+            String lastName,
+            String avatarUrl
+    ){
+        _log.info("Calling user-service via Dubbo: createUser({})", email);
+        try {
+            CreateUserRequest request = CreateUserRequest.newBuilder()
+                    .setEmail(email)
+                    .setPassword(hashedPassword)
+                    .setPhoneNumber(phoneNumber != null ? phoneNumber : "")
+                    .setFirstName(firstName)
+                    .setLastName(lastName)
+                    .setAvatarUrl(avatarUrl != null ? avatarUrl : "")
+                    .build();
+
+            CreateUserResponse response = userServiceStub.createUser(request);
+            return response.getSuccess();
+        } catch (RpcException e) {
+            _log.error("Failed to create user: {}", e.getMessage(), e);
+            return false;
+        }
+    }
 }

@@ -1,7 +1,9 @@
 package com.restaurant.userservice.core.rpc;
 
+import com.restaurant.commons.core.enums.UserType;
 import com.restaurant.userservice.core.service.user.IUserService;
 import com.restaurant.commons.core.rpc.user.*;
+import com.restaurant.userservice.model.User;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.slf4j.Logger;
@@ -36,5 +38,39 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
         return ExistsResponse.newBuilder()
                 .setExists(exists)
                 .build();
+    }
+
+    @Override
+    public CreateUserResponse createUser(CreateUserRequest request) {
+        try {
+            User saved = userService.save(buildUserFromRequest(request));
+
+            return CreateUserResponse.newBuilder()
+                    .setId(saved.getId().toString())
+                    .setSuccess(true)
+                    .setMessage("User created successfully")
+                    .build();
+
+        } catch (Exception e) {
+            _log.error("RPC: createUser failed", e);
+            return CreateUserResponse.newBuilder()
+                    .setSuccess(false)
+                    .setMessage(e.getMessage())
+                    .build();
+        }
+    }
+
+    private User buildUserFromRequest(CreateUserRequest request) {
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPassword(request.getPassword());
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setAvatarUrl(request.getAvatarUrl().isEmpty() ? null : request.getAvatarUrl());
+        user.setIsActive(true);
+        user.setIsVerified(false);
+        user.setUserType(UserType.CUSTOMER);
+        return user;
     }
 }

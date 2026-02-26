@@ -54,7 +54,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public boolean existsByPhoneNumber(String phoneNumber) {
-        return false;
+        return _repo.existsByPhoneNumber(phoneNumber);
     }
 
     @Override
