@@ -2,12 +2,13 @@ package com.restaurant.notification.core.service.sender.dto;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 
 @Data
-@Builder
+@SuperBuilder
 public class SendResult {
     private boolean success;
     private String recipient;

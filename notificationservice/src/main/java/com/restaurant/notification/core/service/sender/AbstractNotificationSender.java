@@ -1,40 +1,61 @@
 package com.restaurant.notification.core.service.sender;
 
+import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.core.enums.NotiChannel;
 import com.restaurant.notification.core.service.sender.dto.AbstractNotificationPayload;
 import com.restaurant.notification.core.service.sender.dto.SendResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class AbstractNotificationSender implements INotificationSender {
+public abstract class AbstractNotificationSender<T extends AbstractNotificationPayload> implements INotificationSender<T> {
+
+    private static final Logger _log = LoggerFactory.getLogger(AbstractNotificationSender.class);
+
     @Override
-    public NotiChannel getChannel() {
-        return null;
+    public abstract NotiChannel getChannel();
+
+    @Override
+    public boolean validate(T payload) {
+        if(payload == null){
+            _log.error("validate, Payload is null");
+            return false;
+        }
+
+        return true;
     }
 
     @Override
-    public boolean validate(AbstractNotificationPayload payload) {
-        return false;
+    public abstract SendResult send(T payload);
+
+    @Override
+    public List<SendResult> sendBulk(List<T> payloads) {
+        _log.info("sendBulk, [{}] Fallback to loop sending for {} payloads", getChannel(), payloads.size());
+        return payloads.stream()
+                .map(payload -> {
+                    try{
+                        return this.send(payload);
+                    }catch (Exception e){
+                        _log.error("sendBulk, [{}] Error sending in fallback,  {}", getChannel().name(), e.getMessage());
+                        return SendResult.failure("Unknown", getChannel().name(), e.getMessage(), Constant.RES0006);
+                    }
+                }).collect(Collectors.toList());
     }
 
     @Override
-    public SendResult send(AbstractNotificationPayload payload) {
-        return null;
+    public List<SendResult> sendBulkScheduled(List<T> payloads, LocalDateTime sendAt) {
+        throw new UnsupportedOperationException(
+                "Scheduled sending is not supported for channel: " + getChannel()
+        );
     }
 
     @Override
-    public SendResult sendScheduled(AbstractNotificationPayload payload, LocalDateTime sendAt) {
-        return null;
-    }
-
-    @Override
-    public List<SendResult> sendBulk(List<AbstractNotificationPayload> payloads) {
-        return List.of();
-    }
-
-    @Override
-    public List<SendResult> sendBulkScheduled(List<AbstractNotificationPayload> payloads, LocalDateTime sendAt) {
-        return List.of();
+    public SendResult sendScheduled(T payload, LocalDateTime sendAt) {
+        throw new UnsupportedOperationException(
+                "Scheduled sending is not supported for channel: " + getChannel()
+        );
     }
 }

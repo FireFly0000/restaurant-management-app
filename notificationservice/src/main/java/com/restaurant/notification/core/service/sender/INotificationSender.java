@@ -7,13 +7,13 @@ import com.restaurant.notification.core.service.sender.dto.SendResult;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface INotificationSender {
+public interface INotificationSender<T extends AbstractNotificationPayload> {
     NotiChannel getChannel();
-    boolean validate(AbstractNotificationPayload payload);
+    boolean validate(T payload);
 
-    SendResult send(AbstractNotificationPayload payload);
-    SendResult sendScheduled(AbstractNotificationPayload payload, LocalDateTime sendAt);
+    SendResult send(T payload);
+    SendResult sendScheduled(T payload, LocalDateTime sendAt);
 
-    List<SendResult> sendBulk(List<AbstractNotificationPayload> payloads);
-    List<SendResult> sendBulkScheduled(List<AbstractNotificationPayload> payloads, LocalDateTime sendAt);
+    List<SendResult> sendBulk(List<T> payloads);
+    List<SendResult> sendBulkScheduled(List<T> payloads, LocalDateTime sendAt);
 }
