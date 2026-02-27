@@ -26,7 +26,7 @@ public class Constant {
     public static final String UTF_8 = "UTF-8";
     public static final String SOURCE_MESSAGES_CLASSPATH = "classpath:i18n/messages";
     public static final String SOURCE_VALIDATIONS_CLASSPATH = "classpath:i18n/validation";
-
+    public static final String DLT = ".DLT";
     /* PUBLIC API */
     public static final List<Pair<String, String>> PUBLIC_ENDPOINT = List.of(
             Pair.of(String.format("%s/auth/sign-in", API_V1_PREFIX), HTTP_POST),
@@ -40,6 +40,7 @@ public class Constant {
     public static final String RES0003 = "RES0003"; // Third-party Service Error
     public static final String RES0004 = "RES0004"; // Timeout Error (Gateway/DB timeout)
     public static final String RES0005 = "RES0005"; // JSON Processing/Parsing Error
+    public static final String RES0006 = "RES0006"; // Email Sender Error
 
     // 1xxx: INPUT VALIDATION
     public static final String RES1001 = "RES1001"; // Parameter Invalid
@@ -56,7 +57,8 @@ public class Constant {
     // 3xxx: BUSINESS LOGIC
     public static final String RES3001 = "RES3001"; // Resource Not Found
     public static final String RES3002 = "RES3002"; // Resource Already Exists
-    public static final String RES3004 = "RES3003"; // Action Isn't Allowed
+    public static final String RES3003 = "RES3003"; // Action Isn't Allowed
+    public static final String RES3004 = "RES3004"; // The Payload of notification is invalid
 
     /* TASK */
 
