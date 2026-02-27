@@ -1,7 +1,6 @@
 package com.restaurant.apigateway.core.service.jwt;
 
 import com.restaurant.apigateway.config.ApiGatewayProperties;
-import com.restaurant.apigateway.core.service.redis.RedisServiceImpl;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -19,7 +18,7 @@ import com.restaurant.commons.utils.StringUtils;
 public class JwtServiceImpl implements IJwtService {
 
     private final SecretKey secretKey;
-    private final Logger _log = LoggerFactory.getLogger(JwtServiceImpl.class);
+    private static final Logger _log = LoggerFactory.getLogger(JwtServiceImpl.class);
 
     public JwtServiceImpl(ApiGatewayProperties _properties){
         this.secretKey = getSecretKey(_properties.getJwt().getSecret());
@@ -44,8 +43,31 @@ public class JwtServiceImpl implements IJwtService {
                 .get(key, type);
     }
 
+    @Override
+    public long getTokenTtlSeconds(String token){
+        try {
+            Date expiration = extractClaim(token, Claims::getExpiration);
+            long now = System.currentTimeMillis();
+            long ttlMillis = expiration.getTime() - now;
+
+            long ttlSeconds = ttlMillis / 1000;
+            return Math.max(ttlSeconds, 0);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     public static boolean isValidJwtTokenFormat(String token) {
-        return StringUtils.isStringNotEmpty(token) && token.split("\\.").length == 3;
+        boolean isValid = StringUtils.isStringNotEmpty(token) && token.split("\\.").length == 3;
+
+        if(isValid){
+          _log.info("Token is valid");
+        }
+        else{
+            _log.warn("Invalid JWT Token received");
+        }
+
+        return isValid;
     }
 
     private Claims extractClaims(String token){

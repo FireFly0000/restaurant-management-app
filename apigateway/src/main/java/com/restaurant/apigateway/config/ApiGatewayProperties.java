@@ -10,6 +10,12 @@ import org.springframework.context.annotation.Configuration;
 public class ApiGatewayProperties {
     private Jwt jwt;
     private Redis redis;
+    private Blacklist blacklist;
+
+    @Data
+    public static class Blacklist {
+        private String prefix;
+    }
 
     @Data
     public static class Jwt {

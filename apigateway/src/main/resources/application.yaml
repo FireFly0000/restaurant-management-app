@@ -389,3 +389,5 @@ app:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
+    blacklist:
+      prefix: "blacklist:jwt:"
