@@ -1,6 +1,5 @@
 package com.restaurant.notification.core.service.sender.dto;
 
-import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.SuperBuilder;
 
@@ -38,4 +37,6 @@ public abstract class AbstractNotificationPayload {
      * Validate payload
      */
     public abstract boolean isValid();
+
+    protected String eventId;
 }

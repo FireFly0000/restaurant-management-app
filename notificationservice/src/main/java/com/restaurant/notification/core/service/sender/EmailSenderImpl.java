@@ -41,6 +41,7 @@ public class EmailSenderImpl extends AbstractNotificationSender<EmailPayload> im
             return SendResult.failure(
                     String.join(", ", payload.getTo()),
                     getChannel().name(),
+                    payload.getEventId(),
                     "Payload is invalid",
                     Constant.RES3004
             );
@@ -74,6 +75,7 @@ public class EmailSenderImpl extends AbstractNotificationSender<EmailPayload> im
                     String.join(", ", payload.getTo()),
                     getChannel().name(),
                     ex.getMessage(),
+                    payload.getEventId(),
                     Constant.RES0006
             );
         }
@@ -94,6 +96,7 @@ public class EmailSenderImpl extends AbstractNotificationSender<EmailPayload> im
                 results.add(SendResult.failure(
                         "Unknown",
                         getChannel().name(),
+                        payload.getEventId(),
                         "Payload is invalid or wrong type",
                         Constant.RES3004
                 ));
@@ -122,6 +125,7 @@ public class EmailSenderImpl extends AbstractNotificationSender<EmailPayload> im
                 results.add(SendResult.failure(
                         String.join(", ", payload.getTo()),
                         getChannel().name(),
+                        payload.getEventId(),
                         "Error building email: " + ex.getMessage(),
                         Constant.RES0006
                 ));
@@ -139,7 +143,7 @@ public class EmailSenderImpl extends AbstractNotificationSender<EmailPayload> im
                     results.add(SendResult.success(
                             String.join(", ", payload.getTo()),
                             getChannel().name(),
-                            msg.getMessageID() != null ? msg.getMessageID() : "BATCH_SENT"
+                            payload.getEventId()
                     ));
                 }
                 _log.info("sendBulk, Sent {} emails in batch", messagesToSend.size());
@@ -149,6 +153,7 @@ public class EmailSenderImpl extends AbstractNotificationSender<EmailPayload> im
                     results.add(SendResult.failure(
                             String.join(", ", payload.getTo()),
                             getChannel().name(),
+                            payload.getEventId(),
                             "Batch error: " + ex.getMessage(),
                             Constant.RES0006
                     ));
