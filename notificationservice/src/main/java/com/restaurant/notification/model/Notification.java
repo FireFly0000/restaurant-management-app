@@ -2,29 +2,34 @@ package com.restaurant.notification.model;
 
 import com.restaurant.commons.core.BaseEntity;
 import com.restaurant.commons.core.enums.NotiChannel;
+import com.restaurant.commons.core.enums.NotiStatus;
 import com.restaurant.commons.core.enums.NotiType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import jakarta.persistence.*;
+import lombok.*;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.UUID;
 
 @Table(name = "notifications")
 @Data
 @Entity
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class Notification extends BaseEntity {
     @Id
     @UuidGenerator(style = UuidGenerator.Style.TIME)
     private UUID id;
 
+    @Enumerated(EnumType.STRING)
     private NotiType type;
+    @Enumerated(EnumType.STRING)
     private NotiChannel channel;
+    @Enumerated(EnumType.STRING)
+    private NotiStatus status;
 
     private String title;
     private String message;
@@ -40,4 +45,16 @@ public class Notification extends BaseEntity {
     private LocalDateTime sentAt;
     private LocalDateTime startAt;
     private LocalDateTime completedAt;
+
+    @Column(unique = true)
+    private String eventId;
+
+    @Version
+    private Integer version;
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+    }
 }
