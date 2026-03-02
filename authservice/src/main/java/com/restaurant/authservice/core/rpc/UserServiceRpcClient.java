@@ -53,9 +53,9 @@ public class UserServiceRpcClient {
 
             ExistsResponse response = userServiceStub.existsByPhoneNumber(request);
             return response.getExists();
-        } catch (Exception e) {
-            _log.error("Failed to check if phone number exists: {}", e.getMessage(), e);
-            throw e;
+        } catch (RpcException e) {
+            _log.error("Failed to create user: {}", e.getMessage(), e);
+            return false;
         }
     }
 

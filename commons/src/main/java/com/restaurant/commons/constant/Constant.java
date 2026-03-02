@@ -41,6 +41,7 @@ public class Constant {
     public static final String RES0004 = "RES0004"; // Timeout Error (Gateway/DB timeout)
     public static final String RES0005 = "RES0005"; // JSON Processing/Parsing Error
     public static final String RES0006 = "RES0006"; // Email Sender Error
+    public static final String RES0007 = "RES0007"; //Downstream service error (RPC)
 
     // 1xxx: INPUT VALIDATION
     public static final String RES1001 = "RES1001"; // Parameter Invalid
@@ -59,6 +60,9 @@ public class Constant {
     public static final String RES3002 = "RES3002"; // Resource Already Exists
     public static final String RES3003 = "RES3003"; // Action Isn't Allowed
     public static final String RES3004 = "RES3004"; // The Payload of notification is invalid
+    public static final String RES3005 = "RES3005"; // Confirm password and password do not match
+    public static final String RES3006 = "RES3006"; // Email already exists
+    public static final String RES3007 = "RES3007"; // Phone number already exists
 
     /* TASK */
 

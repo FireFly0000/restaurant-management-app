@@ -4,6 +4,7 @@ import com.restaurant.commons.core.enums.UserType;
 import com.restaurant.userservice.core.service.user.IUserService;
 import com.restaurant.commons.core.rpc.user.*;
 import com.restaurant.userservice.model.User;
+import io.grpc.Status;
 import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.slf4j.Logger;
@@ -24,20 +25,30 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
 
     @Override
     public ExistsResponse existsByEmail(ExistsByEmailRequest request) {
-        _log.info("RPC: existsByEmail called with email={}", request.getEmail());
-        boolean exists = userService.existsByEmail(request.getEmail());
-        return ExistsResponse.newBuilder()
-                .setExists(exists)
-                .build();
+        try {
+            _log.info("RPC: existsByEmail called with email={}", request.getEmail());
+            boolean exists = userService.existsByEmail(request.getEmail());
+            return ExistsResponse.newBuilder()
+                    .setExists(exists)
+                    .build();
+        } catch (Exception e){
+            _log.error("RPC: checked email exists failed", e);
+            throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
+        }
     }
 
     @Override
     public ExistsResponse existsByPhoneNumber(ExistsByPhoneNumberRequest request) {
-        _log.info("RPC: existsByPhoneNumber called with phone number={}", request.getPhoneNumber());
-        boolean exists = userService.existsByPhoneNumber(request.getPhoneNumber());
-        return ExistsResponse.newBuilder()
-                .setExists(exists)
-                .build();
+        try {
+            _log.info("RPC: existsByPhoneNumber called with phone number={}", request.getPhoneNumber());
+            boolean exists = userService.existsByPhoneNumber(request.getPhoneNumber());
+            return ExistsResponse.newBuilder()
+                    .setExists(exists)
+                    .build();
+        } catch (Exception e){
+            _log.error("RPC: checked phone number exists failed", e);
+            throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
+        }
     }
 
     @Override
@@ -53,10 +64,7 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
 
         } catch (Exception e) {
             _log.error("RPC: createUser failed", e);
-            return CreateUserResponse.newBuilder()
-                    .setSuccess(false)
-                    .setMessage(e.getMessage())
-                    .build();
+            throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
         }
     }
 

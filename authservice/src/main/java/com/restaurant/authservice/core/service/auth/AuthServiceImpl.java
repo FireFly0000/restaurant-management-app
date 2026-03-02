@@ -2,8 +2,12 @@ package com.restaurant.authservice.core.service.auth;
 
 import com.restaurant.authservice.core.rpc.UserServiceRpcClient;
 import com.restaurant.authservice.core.service.auth.dto.*;
+import com.restaurant.commons.constant.Constant;
+import com.restaurant.commons.exception.AppException;
+import org.apache.dubbo.rpc.RpcException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,22 +32,22 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public Boolean register(RegisterRequest request) {
+    public Boolean signUp(RegisterRequest request) {
         _log.info("Starting registration process for email: {}", request.getEmail());
 
-        try {
-            // Step 1: Validate passwords match
-            if (!request.passwordsMatch()) {
-                _log.warn("Registration failed: Passwords do not match for email: {}", request.getEmail());
-                throw new IllegalArgumentException("Passwords do not match");
-            }
+        // Step 1: Validate passwords match
+        if (!request.passwordsMatch()) {
+            _log.warn("Registration failed: Passwords do not match for email: {}", request.getEmail());
+            throw new AppException("Passwords do not match", Constant.RES3005, HttpStatus.BAD_REQUEST.name());
+        }
 
+        try{
             // Step 2: Check if email already exists via RPC
             _log.info("Checking if email exists: {}", request.getEmail());
             boolean emailExists = userServiceRpcClient.existsByEmail(request.getEmail());
             if (emailExists) {
                 _log.warn("Registration failed: Email already exists - {}", request.getEmail());
-                throw new IllegalArgumentException("Email already exists");
+                throw new AppException("Email already exists", Constant.RES3006, HttpStatus.BAD_REQUEST.name());
             }
 
             // Step 3: Check if phone number already exists via RPC
@@ -51,13 +55,12 @@ public class AuthServiceImpl implements IAuthService {
             boolean phoneNumberExists = userServiceRpcClient.existsByPhoneNumber(request.getPhoneNumber());
             if (phoneNumberExists) {
                 _log.warn("Registration failed: Phone number already exists - {}", request.getPhoneNumber());
-                throw new IllegalArgumentException("Phone number already exists");
+                throw new AppException("Phone number already exists", Constant.RES3007, HttpStatus.BAD_REQUEST.name());
             }
 
-            // Step 4: Hash the password
             String hashedPassword = _passwordEncoder.encode(request.getPassword());
 
-            // Step 5: Create user via RPC call to user-service
+            // Step 4: Create user via RPC call to user-service
             boolean created = userServiceRpcClient.createUser(
                     request.getEmail(),
                     hashedPassword,
@@ -67,23 +70,17 @@ public class AuthServiceImpl implements IAuthService {
                     request.getAvatarUrl()
             );
 
-            if (!created) {
-                _log.error("Registration failed: Could not create user for email: {}", request.getEmail());
-                throw new RuntimeException("Failed to create user");
-            }
-
             _log.info("Registration successful for email: {}", request.getEmail());
             return true;
+        }catch (RpcException rpcEx){
+            _log.error("User-service RPC failed during registration. Email={}",
+                    request.getEmail(), rpcEx);
 
-            // TODO: Continue with registration logic (validate, hash password, create user, etc.)
-            // For now, just return true to indicate email check passed
-
-        } catch (IllegalArgumentException e) {
-            // Rethrow business logic errors directly without wrapping
-            throw e;
-        } catch (Exception e) {
-            _log.error("Error during registration for email: {}", request.getEmail(), e);
-            throw new RuntimeException("Registration failed due to service error", e);
+            throw new AppException(
+                    "User service is temporarily unavailable. Please try again later.",
+                    Constant.RES0007,
+                    HttpStatus.SERVICE_UNAVAILABLE.name()
+            );
         }
     }
 
