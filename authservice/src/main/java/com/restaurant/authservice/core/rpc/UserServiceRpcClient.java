@@ -3,7 +3,6 @@ package com.restaurant.authservice.core.rpc;
 import com.restaurant.commons.core.rpc.user.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.apache.dubbo.rpc.RpcException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,17 +27,12 @@ public class UserServiceRpcClient {
      */
     public boolean existsByEmail(String email) {
         _log.info("Calling user-service via Dubbo: existsByEmail({})", email);
-        try {
-            ExistsByEmailRequest request = ExistsByEmailRequest.newBuilder()
-                    .setEmail(email)
-                    .build();
+        ExistsByEmailRequest request = ExistsByEmailRequest.newBuilder()
+                .setEmail(email)
+                .build();
 
-            ExistsResponse response = userServiceStub.existsByEmail(request);
-            return response.getExists();
-        } catch (RpcException e) {
-            _log.error("Failed to check if email exists: {}", e.getMessage(), e);
-            return false;
-        }
+        ExistsResponse response = userServiceStub.existsByEmail(request);
+        return response.getExists();
     }
 
     /**
@@ -46,17 +40,12 @@ public class UserServiceRpcClient {
      */
     public boolean existsByPhoneNumber(String phoneNumber) {
         _log.info("Calling user-service via Dubbo: existsByPhoneNumber({})", phoneNumber);
-        try {
-            ExistsByPhoneNumberRequest request = ExistsByPhoneNumberRequest.newBuilder()
-                    .setPhoneNumber(phoneNumber)
-                    .build();
+        ExistsByPhoneNumberRequest request = ExistsByPhoneNumberRequest.newBuilder()
+                .setPhoneNumber(phoneNumber)
+                .build();
 
-            ExistsResponse response = userServiceStub.existsByPhoneNumber(request);
-            return response.getExists();
-        } catch (RpcException e) {
-            _log.error("Failed to create user: {}", e.getMessage(), e);
-            return false;
-        }
+        ExistsResponse response = userServiceStub.existsByPhoneNumber(request);
+        return response.getExists();
     }
 
     public boolean createUser(
@@ -68,21 +57,16 @@ public class UserServiceRpcClient {
             String avatarUrl
     ){
         _log.info("Calling user-service via Dubbo: createUser({})", email);
-        try {
-            CreateUserRequest request = CreateUserRequest.newBuilder()
-                    .setEmail(email)
-                    .setPassword(hashedPassword)
-                    .setPhoneNumber(phoneNumber != null ? phoneNumber : "")
-                    .setFirstName(firstName)
-                    .setLastName(lastName)
-                    .setAvatarUrl(avatarUrl != null ? avatarUrl : "")
-                    .build();
+        CreateUserRequest request = CreateUserRequest.newBuilder()
+                .setEmail(email)
+                .setPassword(hashedPassword)
+                .setPhoneNumber(phoneNumber != null ? phoneNumber : "")
+                .setFirstName(firstName)
+                .setLastName(lastName)
+                .setAvatarUrl(avatarUrl != null ? avatarUrl : "")
+                .build();
 
-            CreateUserResponse response = userServiceStub.createUser(request);
-            return response.getSuccess();
-        } catch (RpcException e) {
-            _log.error("Failed to create user: {}", e.getMessage(), e);
-            return false;
-        }
+        CreateUserResponse response = userServiceStub.createUser(request);
+        return response.getSuccess();
     }
 }

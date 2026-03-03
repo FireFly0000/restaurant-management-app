@@ -4,6 +4,7 @@ import com.restaurant.authservice.core.service.auth.IAuthService;
 import com.restaurant.authservice.core.service.auth.dto.RegisterRequest;
 import com.restaurant.authservice.utils.Utils;
 import com.restaurant.commons.utils.AppUtils;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -26,7 +27,7 @@ public class AuthController {
     }
 
     @PostMapping("/sign-up")
-    public ResponseEntity<?> signUp(@RequestBody RegisterRequest request) {
+    public ResponseEntity<?> signUp(@RequestBody @Valid RegisterRequest request) {
         _log.info("signUp, Signup for user with email: {}", request.getEmail());
 
         String successMsg = Utils.getMessage("user.created.true");

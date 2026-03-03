@@ -15,8 +15,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RegisterRequest {
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
+    @NotBlank(message = "{auth.signup.email.required}")
+    @Email(message = "{auth.signup.email.invalid}")
     private String email;
 
     @NotBlank(message = "Password is required")

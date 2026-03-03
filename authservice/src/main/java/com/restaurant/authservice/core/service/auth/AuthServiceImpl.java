@@ -38,7 +38,7 @@ public class AuthServiceImpl implements IAuthService {
         // Step 1: Validate passwords match
         if (!request.passwordsMatch()) {
             _log.warn("Registration failed: Passwords do not match for email: {}", request.getEmail());
-            throw new AppException("Passwords do not match", Constant.RES3005, HttpStatus.BAD_REQUEST.name());
+            throw new AppException("auth.signup.password_not_match", Constant.RES3005, HttpStatus.BAD_REQUEST.name());
         }
 
         try{
@@ -47,7 +47,7 @@ public class AuthServiceImpl implements IAuthService {
             boolean emailExists = userServiceRpcClient.existsByEmail(request.getEmail());
             if (emailExists) {
                 _log.warn("Registration failed: Email already exists - {}", request.getEmail());
-                throw new AppException("Email already exists", Constant.RES3006, HttpStatus.BAD_REQUEST.name());
+                throw new AppException("auth.signup.email_exists", Constant.RES3006, HttpStatus.BAD_REQUEST.name());
             }
 
             // Step 3: Check if phone number already exists via RPC
@@ -55,7 +55,7 @@ public class AuthServiceImpl implements IAuthService {
             boolean phoneNumberExists = userServiceRpcClient.existsByPhoneNumber(request.getPhoneNumber());
             if (phoneNumberExists) {
                 _log.warn("Registration failed: Phone number already exists - {}", request.getPhoneNumber());
-                throw new AppException("Phone number already exists", Constant.RES3007, HttpStatus.BAD_REQUEST.name());
+                throw new AppException("auth.signup.phone_exists", Constant.RES3007, HttpStatus.BAD_REQUEST.name());
             }
 
             String hashedPassword = _passwordEncoder.encode(request.getPassword());
@@ -70,6 +70,15 @@ public class AuthServiceImpl implements IAuthService {
                     request.getAvatarUrl()
             );
 
+            if (!created) {
+                _log.error("User creation failed in user-service for email: {}", request.getEmail());
+                throw new AppException(
+                        "user.created.false",
+                        Constant.RES3008,
+                        HttpStatus.INTERNAL_SERVER_ERROR.name()
+                );
+            }
+
             _log.info("Registration successful for email: {}", request.getEmail());
             return true;
         }catch (RpcException rpcEx){
@@ -77,7 +86,7 @@ public class AuthServiceImpl implements IAuthService {
                     request.getEmail(), rpcEx);
 
             throw new AppException(
-                    "User service is temporarily unavailable. Please try again later.",
+                    "user.service.rpc.error",
                     Constant.RES0007,
                     HttpStatus.SERVICE_UNAVAILABLE.name()
             );
