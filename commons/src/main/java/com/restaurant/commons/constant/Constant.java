@@ -58,6 +58,7 @@ public class Constant {
     public static final String RES3002 = "RES3002"; // Resource Already Exists
     public static final String RES3003 = "RES3003"; // Action Isn't Allowed
     public static final String RES3004 = "RES3004"; // The Payload of notification is invalid
+    public static final String RES3005 = "RES3005"; // Resource couldn't be saved.
 
     /* TASK */
 
