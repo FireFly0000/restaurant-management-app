@@ -12,4 +12,6 @@ import java.util.UUID;
 public interface IBusinessRepository extends JpaRepository<Business, UUID> {
     @Query("SELECT b FROM Business b WHERE b.id = :id AND b.isActive = true AND b.isDeleted = false")
     Optional<Business> getByIdActiveTrueAndDeleteFalse(UUID id);
+
+    boolean existsByIdAndUserId(UUID id, UUID userId);
 }
