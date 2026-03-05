@@ -61,6 +61,22 @@ services:
     networks:
       - restaurant-network
 
+  schema-registry:
+    image: confluentinc/cp-schema-registry:${KAFKA_VERSION}
+    container_name: restaurant-schema-registry
+    restart: unless-stopped
+    hostname: schema-registry
+    depends_on:
+      - kafka
+    ports:
+      - "${SCHEMA_REGISTRY_PORT}:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'kafka:9092'
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    networks:
+      - restaurant-network
+
   # Kafka UI
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -71,6 +87,7 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: restaurant-kafka
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
       DYNAMIC_CONFIG_ENABLED: "true"
     depends_on:
       - kafka
@@ -168,6 +185,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  mailpit:
+    image: axllent/mailpit:v1.29
+    container_name: mailpit-test
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    restart: unless-stopped
 
 volumes:
   postgres_data:

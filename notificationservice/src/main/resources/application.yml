@@ -8,6 +8,18 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:notification@restaurant.vn}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_TSL_ENABLE:true}
+
   cloud:
     nacos:
       discovery:
@@ -66,18 +78,18 @@ spring:
 
   # Kafka Configuration
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
+      value-serializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
       acks: all
-      retries: 0
       properties:
+        schema.registry.url: ${SCHEMA_REGISTRY_HOST:http://localhost}:${SCHEMA_REGISTRY_PORT:8081}
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
         retry.backoff.ms: 1000
-        delivery.timeout.ms: 10000
+        delivery.timeout.ms: 30000
         request.timeout.ms: 10000
         linger.ms: 5
         batch.size: 16384
@@ -88,10 +100,11 @@ spring:
       group-id: notification-service-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+      value-deserializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer
       enable-auto-commit: false
       properties:
-        spring.json.trusted.packages: com.restaurant.*
+        schema.registry.url: ${SCHEMA_REGISTRY_HOST:http://localhost}:${SCHEMA_REGISTRY_PORT:8081}
+        derive.type: true
         max.poll.records: 100
         max.poll.interval.ms: 300000
         session.timeout.ms: 45000
@@ -183,6 +196,12 @@ logging:
 # Application-specific configuration
 app:
   notification:
+    kafka:
+      retry:
+        max-attempts: 3
+        interval-ms: 2000
+      consumer:
+        concurency: 3
     # Cache settings
     cache:
       ttl-seconds: 3600

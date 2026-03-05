@@ -1,12 +1,12 @@
 package com.restaurant.notification.core.service.sender.dto;
 
-import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.SuperBuilder;
 
 import java.util.Map;
 
 @Data
-@Builder
+@SuperBuilder
 public abstract class AbstractNotificationPayload {
     /**
      * Recipient identifier (email, phone, user_id, device_token)
@@ -37,4 +37,6 @@ public abstract class AbstractNotificationPayload {
      * Validate payload
      */
     public abstract boolean isValid();
+
+    protected String eventId;
 }

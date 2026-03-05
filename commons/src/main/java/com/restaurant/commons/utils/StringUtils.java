@@ -64,4 +64,8 @@ public class  StringUtils extends org.apache.commons.lang3.StringUtils {
         return (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
                (trimmed.startsWith("[") && trimmed.endsWith("]"));
     }
+
+    public static boolean hasText(String text){
+        return text != null && !text.trim().isEmpty();
+    }
 }
