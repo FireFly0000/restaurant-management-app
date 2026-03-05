@@ -5,6 +5,7 @@ import com.restaurant.commons.core.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.Date;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
+@SQLRestriction("is_deleted = false")
 public class Business extends BaseEntity {
     @Id
     @UuidGenerator(style = UuidGenerator.Style.TIME)
