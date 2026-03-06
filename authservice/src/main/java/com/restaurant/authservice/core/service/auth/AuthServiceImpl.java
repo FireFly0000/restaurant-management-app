@@ -1,6 +1,6 @@
 package com.restaurant.authservice.core.service.auth;
 
-import com.restaurant.authservice.core.rpc.UserServiceRpcClient;
+import com.restaurant.authservice.core.rpc.IUserServiceRpcClient;
 import com.restaurant.authservice.core.service.auth.dto.*;
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.exception.AppException;
@@ -14,15 +14,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthServiceImpl implements IAuthService {
 
-    private final UserServiceRpcClient userServiceRpcClient;
+    private final IUserServiceRpcClient _userServiceRpcClient;
     private final Logger _log = LoggerFactory.getLogger(AuthServiceImpl.class);
     private final PasswordEncoder _passwordEncoder;
 
     public AuthServiceImpl(
-            UserServiceRpcClient userServiceRpcClient,
+            IUserServiceRpcClient userServiceRpcClient,
             PasswordEncoder passwordEncoder
     ){
-        this.userServiceRpcClient = userServiceRpcClient;
+        this._userServiceRpcClient = userServiceRpcClient;
         this._passwordEncoder = passwordEncoder;
     }
 
@@ -36,15 +36,15 @@ public class AuthServiceImpl implements IAuthService {
         _log.info("Starting registration process for email: {}", request.getEmail());
 
         // Step 1: Validate passwords match
-        if (!request.passwordsMatch()) {
+/*        if (!request.passwordsMatch()) {
             _log.warn("Registration failed: Passwords do not match for email: {}", request.getEmail());
             throw new AppException("auth.signup.password_not_match", Constant.RES3005, HttpStatus.BAD_REQUEST.name());
-        }
+        }*/
 
         try{
             // Step 2: Check if email already exists via RPC
             _log.info("Checking if email exists: {}", request.getEmail());
-            boolean emailExists = userServiceRpcClient.existsByEmail(request.getEmail());
+            boolean emailExists = _userServiceRpcClient.existsByEmail(request.getEmail());
             if (emailExists) {
                 _log.warn("Registration failed: Email already exists - {}", request.getEmail());
                 throw new AppException("auth.signup.email_exists", Constant.RES3006, HttpStatus.BAD_REQUEST.name());
@@ -52,7 +52,7 @@ public class AuthServiceImpl implements IAuthService {
 
             // Step 3: Check if phone number already exists via RPC
             _log.info("Checking if phone number exists: {}", request.getPhoneNumber());
-            boolean phoneNumberExists = userServiceRpcClient.existsByPhoneNumber(request.getPhoneNumber());
+            boolean phoneNumberExists = _userServiceRpcClient.existsByPhoneNumber(request.getPhoneNumber());
             if (phoneNumberExists) {
                 _log.warn("Registration failed: Phone number already exists - {}", request.getPhoneNumber());
                 throw new AppException("auth.signup.phone_exists", Constant.RES3007, HttpStatus.BAD_REQUEST.name());
@@ -61,7 +61,7 @@ public class AuthServiceImpl implements IAuthService {
             String hashedPassword = _passwordEncoder.encode(request.getPassword());
 
             // Step 4: Create user via RPC call to user-service
-            boolean created = userServiceRpcClient.createUser(
+            boolean created = _userServiceRpcClient.createUser(
                     request.getEmail(),
                     hashedPassword,
                     request.getPhoneNumber(),

@@ -14,12 +14,13 @@ import java.util.concurrent.CompletableFuture;
 public class KafkaProducerWrapper {
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    /**
+/**
      * Send the message to the topic
      * @param topic Topic
      * @param key Key
-     * @param message Message
-     */
+     * @param message Message*/
+
+
     public void sendMessage(String topic, String key, Object message){
         log.debug("Preparing to send message to Topic: {}, Key: {}", topic, key);
         try{

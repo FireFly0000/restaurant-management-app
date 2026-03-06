@@ -64,18 +64,19 @@ spring:
 
   # Kafka Configuration
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
       acks: all
-      retries: 3
       properties:
+        schema.registry.url: ${SCHEMA_REGISTRY_HOST:http://localhost}:${SCHEMA_REGISTRY_PORT:8081}
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
         retry.backoff.ms: 1000
         delivery.timeout.ms: 120000
+        request.timeout.ms: 10000
         linger.ms: 5
         batch.size: 16384
         buffer.memory: 33554432
@@ -85,10 +86,11 @@ spring:
       group-id: auth-service-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer
       enable-auto-commit: false
       properties:
-        spring.json.trusted.packages: com.restaurant.*
+        schema.registry.url: ${SCHEMA_REGISTRY_HOST:http://localhost}:${SCHEMA_REGISTRY_PORT:8081}
+        derive.type: true
         max.poll.records: 100
         max.poll.interval.ms: 300000
         session.timeout.ms: 45000

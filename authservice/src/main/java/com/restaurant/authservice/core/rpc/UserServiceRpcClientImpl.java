@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class UserServiceRpcClient {
+public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
 
     @DubboReference(
             version = "1.0.0",
@@ -20,7 +20,7 @@ public class UserServiceRpcClient {
             check = false
     )
     private UserService userServiceStub;  //
-    private final Logger _log = LoggerFactory.getLogger(UserServiceRpcClient.class);
+    private final Logger _log = LoggerFactory.getLogger(UserServiceRpcClientImpl.class);
 
     /**
      * Check if user exists by email

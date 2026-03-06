@@ -1,5 +1,6 @@
 package com.restaurant.authservice.core.kafka;
 
+import com.restaurant.commons.core.rpc.notification.SendEmailEvent;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,14 +14,20 @@ public class AuthEventProducer {
     private final KafkaProducerWrapper _kafka;
 
     public AuthEventProducer(
-            KafkaProducerWrapper kafka,
-            @Qualifier("userCreatedTopic") NewTopic userCreatedTopic
+            KafkaProducerWrapper kafka
     ){
         this._kafka = kafka;
     }
 
-    public void sendUserCreatedEvent(){
-        SendEmailEvent
-        _kafka.sendMessage("notify.email", );
+    public void sendUserCreatedEvent(SendEmailEvent event){
+        // Topic, key, message.
+        // -> Topic:
+        // -> key: Kafka ->  top -> partition -> 3
+                // P1: 1,2,3,4,5,6,
+                // P2: 8.9.10.11.12
+                // P3: 13,14,15,16,17
+        // -> message: Payload
+//        SendEmailEvent event;
+        _kafka.sendMessage("notify.email", String.valueOf(event.getUserId()), event);
     }
 }
