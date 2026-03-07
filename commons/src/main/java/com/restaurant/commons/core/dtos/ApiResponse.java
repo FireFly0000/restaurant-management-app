@@ -3,6 +3,8 @@ package com.restaurant.commons.core.dtos;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import java.util.Date;
+
 @Getter
 @Setter
 @SuperBuilder

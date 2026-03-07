@@ -2,20 +2,10 @@ package com.restaurant.commons.utils;
 
 import com.restaurant.commons.core.dtos.ApiResponse;
 
-import com.restaurant.commons.core.dtos.ApiResponse;
-
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
 public class AppUtils {
-    public static ApiResponse buildResponse(String message, Object data, Object extra){
-        return ApiResponse.builder()
-                .message(message)
-                .data(data)
-                .extra(extra)
-                .build();
-    }
-
     public static ApiResponse buildResponse(String msg, Object data , Object extra){
         return ApiResponse.builder()
                 .message(msg)
