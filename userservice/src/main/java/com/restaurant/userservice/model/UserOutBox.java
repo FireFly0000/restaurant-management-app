@@ -15,12 +15,16 @@ public class UserOutBox {
     @Id
     @UuidGenerator(style = UuidGenerator.Style.TIME)
     private UUID id;
+
     private String topic;
     private String key;
+
     @Lob
     private byte[] payload;
+
     @Enumerated(EnumType.STRING)
     private OutboxStatus status;
+
     private Integer retry;
     private Instant createdAt;
     private Instant nextRetryAt;

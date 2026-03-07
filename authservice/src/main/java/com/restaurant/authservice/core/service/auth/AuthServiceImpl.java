@@ -1,18 +1,86 @@
 package com.restaurant.authservice.core.service.auth;
 
+import com.restaurant.authservice.core.rpc.IUserServiceRpcClient;
 import com.restaurant.authservice.core.service.auth.dto.*;
+import com.restaurant.commons.constant.Constant;
+import com.restaurant.commons.exception.AppException;
+import org.apache.dubbo.rpc.RpcException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AuthServiceImpl implements IAuthService {
+
+    private final IUserServiceRpcClient _userServiceRpcClient;
+    private final Logger _log = LoggerFactory.getLogger(AuthServiceImpl.class);
+    private final PasswordEncoder _passwordEncoder;
+
+    public AuthServiceImpl(
+            IUserServiceRpcClient userServiceRpcClient,
+            PasswordEncoder passwordEncoder
+    ){
+        this._userServiceRpcClient = userServiceRpcClient;
+        this._passwordEncoder = passwordEncoder;
+    }
+
     @Override
     public AuthResponse login(LoginRequest request) {
         return null;
     }
 
     @Override
-    public Boolean register(RegisterRequest request) {
-        return null;
+    public Boolean signUp(RegisterRequest request) {
+        _log.info("Starting registration process for email: {}", request.getEmail());
+
+        try{
+            _log.info("Checking if email exists: {}", request.getEmail());
+            boolean emailExists = _userServiceRpcClient.existsByEmail(request.getEmail());
+            if (emailExists) {
+                _log.warn("Registration failed: Email already exists - {}", request.getEmail());
+                throw new AppException("auth.signup.email_exists", Constant.RES3006, HttpStatus.BAD_REQUEST.name());
+            }
+
+            _log.info("Checking if phone number exists: {}", request.getPhoneNumber());
+            boolean phoneNumberExists = _userServiceRpcClient.existsByPhoneNumber(request.getPhoneNumber());
+            if (phoneNumberExists) {
+                _log.warn("Registration failed: Phone number already exists - {}", request.getPhoneNumber());
+                throw new AppException("auth.signup.phone_exists", Constant.RES3007, HttpStatus.BAD_REQUEST.name());
+            }
+
+            String hashedPassword = _passwordEncoder.encode(request.getPassword());
+
+            boolean created = _userServiceRpcClient.createUser(
+                    request.getEmail(),
+                    hashedPassword,
+                    request.getPhoneNumber(),
+                    request.getFirstName(),
+                    request.getLastName(),
+                    request.getAvatarUrl()
+            );
+
+            if (!created) {
+                _log.error("User creation failed in user-service for email: {}", request.getEmail());
+                throw new AppException(
+                        "user.created.false",
+                        Constant.RES3008,
+                        HttpStatus.INTERNAL_SERVER_ERROR.name()
+                );
+            }
+            _log.info("Registration successful for email: {}", request.getEmail());
+            return true;
+        }catch (RpcException rpcEx){
+            _log.error("User-service RPC failed during registration. Email={}",
+                    request.getEmail(), rpcEx);
+
+            throw new AppException(
+                    "user.service.rpc.error",
+                    Constant.RES0007,
+                    HttpStatus.SERVICE_UNAVAILABLE.name()
+            );
+        }
     }
 
     @Override

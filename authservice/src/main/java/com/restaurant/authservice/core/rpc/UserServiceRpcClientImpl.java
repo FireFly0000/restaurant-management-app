@@ -1,0 +1,72 @@
+package com.restaurant.authservice.core.rpc;
+
+import com.restaurant.commons.core.rpc.user.*;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+@Slf4j
+@Service
+public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
+
+    @DubboReference(
+            version = "1.0.0",
+            group = "user-service",
+            protocol = "tri",
+            timeout = 3000,
+            retries = 2,
+            check = false
+    )
+    private UserService userServiceStub;  //
+    private final Logger _log = LoggerFactory.getLogger(UserServiceRpcClientImpl.class);
+
+    /**
+     * Check if user exists by email
+     */
+    public boolean existsByEmail(String email) {
+        _log.info("Calling user-service via Dubbo: existsByEmail({})", email);
+        ExistsByEmailRequest request = ExistsByEmailRequest.newBuilder()
+                .setEmail(email)
+                .build();
+
+        ExistsResponse response = userServiceStub.existsByEmail(request);
+        return response.getExists();
+    }
+
+    /**
+     * Check if user exists by phone number
+     */
+    public boolean existsByPhoneNumber(String phoneNumber) {
+        _log.info("Calling user-service via Dubbo: existsByPhoneNumber({})", phoneNumber);
+        ExistsByPhoneNumberRequest request = ExistsByPhoneNumberRequest.newBuilder()
+                .setPhoneNumber(phoneNumber)
+                .build();
+
+        ExistsResponse response = userServiceStub.existsByPhoneNumber(request);
+        return response.getExists();
+    }
+
+    public boolean createUser(
+            String email,
+            String hashedPassword,
+            String phoneNumber,
+            String firstName,
+            String lastName,
+            String avatarUrl
+    ){
+        _log.info("Calling user-service via Dubbo: createUser({})", email);
+        CreateUserRequest request = CreateUserRequest.newBuilder()
+                .setEmail(email)
+                .setPassword(hashedPassword)
+                .setPhoneNumber(phoneNumber != null ? phoneNumber : "")
+                .setFirstName(firstName)
+                .setLastName(lastName)
+                .setAvatarUrl(avatarUrl != null ? avatarUrl : "")
+                .build();
+
+        CreateUserResponse response = userServiceStub.createUser(request);
+        return response.getSuccess();
+    }
+}
