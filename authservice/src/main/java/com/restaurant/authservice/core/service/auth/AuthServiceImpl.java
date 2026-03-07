@@ -35,14 +35,7 @@ public class AuthServiceImpl implements IAuthService {
     public Boolean signUp(RegisterRequest request) {
         _log.info("Starting registration process for email: {}", request.getEmail());
 
-        // Step 1: Validate passwords match
-/*        if (!request.passwordsMatch()) {
-            _log.warn("Registration failed: Passwords do not match for email: {}", request.getEmail());
-            throw new AppException("auth.signup.password_not_match", Constant.RES3005, HttpStatus.BAD_REQUEST.name());
-        }*/
-
         try{
-            // Step 2: Check if email already exists via RPC
             _log.info("Checking if email exists: {}", request.getEmail());
             boolean emailExists = _userServiceRpcClient.existsByEmail(request.getEmail());
             if (emailExists) {
@@ -50,7 +43,6 @@ public class AuthServiceImpl implements IAuthService {
                 throw new AppException("auth.signup.email_exists", Constant.RES3006, HttpStatus.BAD_REQUEST.name());
             }
 
-            // Step 3: Check if phone number already exists via RPC
             _log.info("Checking if phone number exists: {}", request.getPhoneNumber());
             boolean phoneNumberExists = _userServiceRpcClient.existsByPhoneNumber(request.getPhoneNumber());
             if (phoneNumberExists) {
@@ -60,7 +52,6 @@ public class AuthServiceImpl implements IAuthService {
 
             String hashedPassword = _passwordEncoder.encode(request.getPassword());
 
-            // Step 4: Create user via RPC call to user-service
             boolean created = _userServiceRpcClient.createUser(
                     request.getEmail(),
                     hashedPassword,
@@ -78,7 +69,6 @@ public class AuthServiceImpl implements IAuthService {
                         HttpStatus.INTERNAL_SERVER_ERROR.name()
                 );
             }
-
             _log.info("Registration successful for email: {}", request.getEmail());
             return true;
         }catch (RpcException rpcEx){
