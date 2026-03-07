@@ -12,4 +12,5 @@ public class ApiResponse {
     private String message;
     private Object data;
     private Object extra;
+    private Date timestamp;
 }

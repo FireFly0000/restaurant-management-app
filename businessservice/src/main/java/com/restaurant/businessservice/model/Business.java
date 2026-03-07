@@ -3,10 +3,12 @@ package com.restaurant.businessservice.model;
 import com.restaurant.commons.core.enums.BusinessType;
 import com.restaurant.commons.core.BaseEntity;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.util.Date;
 import java.util.UUID;
 
 
@@ -14,6 +16,10 @@ import java.util.UUID;
 @Entity
 @Data
 @EqualsAndHashCode(callSuper = true)
+@SuperBuilder
+@AllArgsConstructor
+@NoArgsConstructor
+@SQLRestriction("is_deleted = false")
 public class Business extends BaseEntity {
     @Id
     @UuidGenerator(style = UuidGenerator.Style.TIME)
@@ -31,4 +37,15 @@ public class Business extends BaseEntity {
     private String email;
     private Boolean isActive;
     private BusinessType businessType;
+
+    @Version
+    private Integer version;
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = new Date();
+        this.updatedAt = new Date();
+        this.isDeleted = false;
+        this.isActive = false;
+    }
 }
