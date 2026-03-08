@@ -11,6 +11,7 @@ import com.restaurant.notification.core.service.sender.dto.SendResult;
 import com.restaurant.notification.model.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.kafka.annotation.KafkaHandler;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.messaging.handler.annotation.Header;
@@ -21,25 +22,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-
 @Service
-public class NotificationConsumer {
-    private static final Logger _log = LoggerFactory.getLogger(NotificationConsumer.class);
+@KafkaListener(topics = "user.event", containerFactory = "kafkaListenerContainerFactory", concurrency = "${app.notification.kafka.consumer.concurency}")
+public class UserEventHandler {
+    private static final Logger _log = LoggerFactory.getLogger(UserEventHandler.class);
 
     private final IEmailSender _emailSender;
     private final INotificationService _notificationService;
 
-    public NotificationConsumer(
-        IEmailSender _emailSender,
-        INotificationService _notificationService
+    public UserEventHandler(
+            IEmailSender _emailSender,
+            INotificationService _notificationService
     ){
         this._emailSender = _emailSender;
         this._notificationService = _notificationService;
     }
 
-    @KafkaListener(topics = "notify.email", containerFactory = "kafkaListenerContainerFactory", concurrency = "${app.notification.kafka.consumer.concurency}")
-    public void handleEmailNotification(@Payload List<SendEmailEvent> events, @Header("X-Event-Id") List<String> eventIds, Acknowledgment ack){
-        _log.info("handleEmailNotification, Prepare to send {} email", events.size());
+    @KafkaListener(topics = "user.event", containerFactory = "kafkaListenerContainerFactory", concurrency = "${app.notification.kafka.consumer.concurency}")
+    public void handleUserCreatedEvent(@Payload List<SendEmailEvent> events, @Header("X-Event-Id") List<String> eventIds, Acknowledgment ack){
+        _log.info("handleUserCreatedEvent, Prepare to send {} email", events.size());
         try {
             List<EmailPayload> payloads = new ArrayList<>();
             List<Notification> notifications = new ArrayList<>();
@@ -89,9 +90,14 @@ public class NotificationConsumer {
 
             ack.acknowledge();
         } catch(Exception ex){
-            _log.error("handleEmailNotification, {}", ex.getMessage());
+            _log.error("handleUserCreatedEvent, {}", ex.getMessage());
 
-            throw new RuntimeException("handleEmailNotification");
+            throw new RuntimeException("handleUserCreatedEvent");
         }
+    }
+
+    @KafkaHandler
+    public void handleUnknown(@Payload List<Object> objects){
+        _log.debug("handleUnknown, Unknown message: {}", objects.size());
     }
 }
