@@ -228,7 +228,9 @@ public class BusinessServiceImpl implements IBusinessService {
             FileCleanUpEvent event = FileCleanUpEvent.newBuilder()
                     .addAllUrls(validUrls)
                     .build();
-            _kafka.sendMessage(KafkaTopic.FILE_CLEANUP, key, event);
+            Map<String, String> headers = new HashMap<>();
+            headers.put(Constant.H_EVENT_ID, UUID.randomUUID().toString());
+            _kafka.sendMessage(KafkaTopic.FILE_CLEANUP, key, event, headers);
             _log.debug("fileCleanUp, Pushed cleanup event key={}", key);
         }
     }
