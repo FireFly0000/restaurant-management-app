@@ -59,7 +59,7 @@ public class AuthServiceImpl implements IAuthService {
           );
         }
 
-        if(!response.getIsVerified()){
+        if(response.getIsVerified()){
             _log.error("Sign in failed. User with email {} is not verified", request.getEmail());
             throw new AppException(
                     "auth.signin.unverified_account",
