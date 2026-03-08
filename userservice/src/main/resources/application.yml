@@ -129,6 +129,7 @@ dubbo:
   protocol:
     name: tri
     port: ${USER_DUBBO_PORT:20882}
+    serialization: protobuf
 
   consumer:
     check: false

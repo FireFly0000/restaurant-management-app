@@ -40,7 +40,7 @@ public abstract class AbstractNotificationSender<T extends AbstractNotificationP
                         return this.send(payload);
                     }catch (Exception e){
                         _log.error("sendBulk, [{}] Error sending in fallback,  {}", getChannel().name(), e.getMessage());
-                        return SendResult.failure("Unknown", getChannel().name(), e.getMessage(), Constant.RES0006);
+                        return SendResult.failure("Unknown", getChannel().name(), payload.getEventId() ,e.getMessage(), Constant.RES0006);
                     }
                 }).collect(Collectors.toList());
     }

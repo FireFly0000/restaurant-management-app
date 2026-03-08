@@ -6,7 +6,6 @@ import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
 public class AppUtils {
-
     public static ApiResponse buildResponse(String msg, Object data , Object extra){
         return ApiResponse.builder()
                 .message(msg)

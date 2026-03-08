@@ -9,6 +9,7 @@ import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -16,8 +17,10 @@ import java.util.Date;
 @EqualsAndHashCode(callSuper = true)
 public class User extends BaseEntity {
     @Id
+    @GeneratedValue
     @UuidGenerator(style = UuidGenerator.Style.TIME)
-    private Long id;
+    @Column(nullable = false, updatable = false)
+    private UUID id;
 
     @Enumerated(EnumType.STRING)
     private UserType userType;
