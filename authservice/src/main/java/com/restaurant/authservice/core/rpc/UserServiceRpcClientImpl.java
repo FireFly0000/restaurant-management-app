@@ -19,7 +19,7 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
             retries = 2,
             check = false
     )
-    private UserService userServiceStub;  //
+    private UserService _userServiceStub;  //
     private final Logger _log = LoggerFactory.getLogger(UserServiceRpcClientImpl.class);
 
     /**
@@ -31,7 +31,7 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
                 .setEmail(email)
                 .build();
 
-        ExistsResponse response = userServiceStub.existsByEmail(request);
+        ExistsResponse response = _userServiceStub.existsByEmail(request);
         return response.getExists();
     }
 
@@ -44,11 +44,11 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
                 .setPhoneNumber(phoneNumber)
                 .build();
 
-        ExistsResponse response = userServiceStub.existsByPhoneNumber(request);
+        ExistsResponse response = _userServiceStub.existsByPhoneNumber(request);
         return response.getExists();
     }
 
-    public boolean createUser(
+    public CreateUserResponse createUser(
             String email,
             String hashedPassword,
             String phoneNumber,
@@ -66,7 +66,16 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
                 .setAvatarUrl(avatarUrl != null ? avatarUrl : "")
                 .build();
 
-        CreateUserResponse response = userServiceStub.createUser(request);
-        return response.getSuccess();
+        return _userServiceStub.createUser(request);
+    }
+
+    public FindByEmailResponse findByEmail( String email ){
+        _log.info("Calling user-service via Dubbo: findByEmail({})", email);
+
+        FindByEmailRequest request = FindByEmailRequest.newBuilder()
+                .setEmail(email)
+                .build();
+
+        return _userServiceStub.findByEmail(request);
     }
 }

@@ -65,6 +65,9 @@ public class Constant {
     public static final String RES3007 = "RES3007"; // Phone number already exists
     public static final String RES3008 = "RES3008"; // Failed Creating new user
     public static final String RES3009 = "RES3009"; // Resource couldn't be saved.
+    public static final String RES30010 = "RES30010"; // User is not active
+    public static final String RES30011 = "RES30011"; // User is not verified
+    public static final String RES30012 = "RES30012"; // Wrong password
 
     /* TASK */
 

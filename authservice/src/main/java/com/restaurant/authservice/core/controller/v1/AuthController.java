@@ -1,7 +1,10 @@
 package com.restaurant.authservice.core.controller.v1;
 
 import com.restaurant.authservice.core.service.auth.IAuthService;
+import com.restaurant.authservice.core.service.auth.dto.AuthResponse;
+import com.restaurant.authservice.core.service.auth.dto.LoginRequest;
 import com.restaurant.authservice.core.service.auth.dto.RegisterRequest;
+import com.restaurant.authservice.core.service.auth.dto.SignupResponse;
 import com.restaurant.authservice.utils.Utils;
 import com.restaurant.commons.utils.AppUtils;
 import jakarta.validation.Valid;
@@ -31,7 +34,7 @@ public class AuthController {
         _log.info("signUp, Signup for user with email: {}", request.getEmail());
 
         String successMsg = Utils.getMessage("user.created.true");
-        Boolean result = _authService.signUp(request);
+        SignupResponse result = _authService.signUp(request);
 
         return new ResponseEntity<>
                 (
@@ -42,5 +45,18 @@ public class AuthController {
                     ),
                     HttpStatus.CREATED
                 );
+    }
+
+    @PostMapping("/sign-in")
+    public ResponseEntity<?> signIn(@RequestBody @Valid LoginRequest request) {
+        _log.info("signIn, Sign in for user with email: {}", request.getEmail());
+
+        String successMsg = Utils.getMessage("auth.signin.success");
+        AuthResponse result = _authService.signIn(request);
+
+        return new ResponseEntity<>(
+                AppUtils.buildResponse(successMsg, result, null),
+                HttpStatus.OK
+        );
     }
 }

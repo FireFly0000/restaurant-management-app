@@ -20,14 +20,14 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBase {
 
-    private final IUserService userService;
+    private final IUserService _userService;
     private final Logger _log = LoggerFactory.getLogger(UserServiceRpcImpl.class);
 
     @Override
     public ExistsResponse existsByEmail(ExistsByEmailRequest request) {
         try {
             _log.info("RPC: existsByEmail called with email={}", request.getEmail());
-            boolean exists = userService.existsByEmail(request.getEmail());
+            boolean exists = _userService.existsByEmail(request.getEmail());
             return ExistsResponse.newBuilder()
                     .setExists(exists)
                     .build();
@@ -41,7 +41,7 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
     public ExistsResponse existsByPhoneNumber(ExistsByPhoneNumberRequest request) {
         try {
             _log.info("RPC: existsByPhoneNumber called with phone number={}", request.getPhoneNumber());
-            boolean exists = userService.existsByPhoneNumber(request.getPhoneNumber());
+            boolean exists = _userService.existsByPhoneNumber(request.getPhoneNumber());
             return ExistsResponse.newBuilder()
                     .setExists(exists)
                     .build();
@@ -54,16 +54,45 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
     @Override
     public CreateUserResponse createUser(CreateUserRequest request) {
         try {
-            User saved = userService.save(buildUserFromRequest(request));
+            User saved = _userService.save(buildUserFromRequest(request));
 
             return CreateUserResponse.newBuilder()
                     .setId(saved.getId().toString())
+                    .setEmail(request.getEmail())
+                    .setFirstName(request.getFirstName())
+                    .setLastName(request.getLastName())
                     .setSuccess(true)
                     .setMessage("User created successfully")
                     .build();
 
         } catch (Exception e) {
             _log.error("RPC: createUser failed", e);
+            throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
+        }
+    }
+
+    @Override
+    public FindByEmailResponse findByEmail(FindByEmailRequest findByEmailRequest) {
+        try {
+            User findByEmailUser = _userService.findByEmail(findByEmailRequest.getEmail());
+
+            return FindByEmailResponse.newBuilder()
+                    .setId(findByEmailUser.getId().toString())
+                    .setEmail(findByEmailUser.getEmail())
+                    .setPassword(findByEmailUser.getPassword())
+                    .setFirstName(findByEmailUser.getFirstName())
+                    .setLastName(findByEmailUser.getLastName())
+                    .setAvatarUrl(
+                            findByEmailUser.getAvatarUrl() != null
+                            ? findByEmailUser.getAvatarUrl() : ""
+                    )
+                    .setUserType(findByEmailUser.getUserType().toString())
+                    .setIsActive(findByEmailUser.getIsActive())
+                    .setIsVerified(findByEmailUser.getIsVerified())
+                    .build();
+
+        } catch (Exception e){
+            _log.error("RPC: find user by email failed", e);
             throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
         }
     }

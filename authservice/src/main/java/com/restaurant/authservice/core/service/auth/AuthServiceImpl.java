@@ -3,6 +3,8 @@ package com.restaurant.authservice.core.service.auth;
 import com.restaurant.authservice.core.rpc.IUserServiceRpcClient;
 import com.restaurant.authservice.core.service.auth.dto.*;
 import com.restaurant.commons.constant.Constant;
+import com.restaurant.commons.core.rpc.user.CreateUserResponse;
+import com.restaurant.commons.core.rpc.user.FindByEmailResponse;
 import com.restaurant.commons.exception.AppException;
 import org.apache.dubbo.rpc.RpcException;
 import org.slf4j.Logger;
@@ -17,22 +19,82 @@ public class AuthServiceImpl implements IAuthService {
     private final IUserServiceRpcClient _userServiceRpcClient;
     private final Logger _log = LoggerFactory.getLogger(AuthServiceImpl.class);
     private final PasswordEncoder _passwordEncoder;
+    private final IJwtService _jwtService;
 
     public AuthServiceImpl(
             IUserServiceRpcClient userServiceRpcClient,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            IJwtService jwtService
     ){
         this._userServiceRpcClient = userServiceRpcClient;
         this._passwordEncoder = passwordEncoder;
+        this._jwtService = jwtService;
     }
 
     @Override
-    public AuthResponse login(LoginRequest request) {
-        return null;
+    public AuthResponse signIn(LoginRequest request) {
+        _log.info("Starting signing in process for email: {}", request.getEmail());
+
+        FindByEmailResponse response;
+
+        try{
+            response = _userServiceRpcClient.findByEmail(request.getEmail());
+        }catch (RpcException rpcEx){
+            _log.error("User-service RPC failed during sign in. Email={}",
+                    request.getEmail(), rpcEx);
+
+            throw new AppException(
+                    "user.service.rpc.error",
+                    Constant.RES0007,
+                    HttpStatus.SERVICE_UNAVAILABLE.name()
+            );
+        }
+
+        if(!response.getIsActive()){
+          _log.error("Sign in failed. User with email {} is not active", request.getEmail());
+          throw new AppException(
+                  "auth.signin.account_inactive",
+                  Constant.RES30010,
+                  HttpStatus.FORBIDDEN.name()
+          );
+        }
+
+        if(!response.getIsVerified()){
+            _log.error("Sign in failed. User with email {} is not verified", request.getEmail());
+            throw new AppException(
+                    "auth.signin.unverified_account",
+                    Constant.RES30011,
+                    HttpStatus.FORBIDDEN.name()
+            );
+        }
+
+        if(!_passwordEncoder.matches(request.getPassword(), response.getPassword())){
+            _log.error("Sign in failed. Wrong password");
+            throw new AppException(
+                    "auth.signin.invalid_password",
+                    Constant.RES30012,
+                    HttpStatus.UNAUTHORIZED.name()
+            );
+        }
+
+        String accessToken = _jwtService.generateAccessToken(
+                response.getId(),
+                response.getEmail(),
+                response.getUserType()
+        );
+
+        String refreshToken = _jwtService.generateRefreshToken(
+                response.getId()
+        );
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
 
     @Override
-    public Boolean signUp(RegisterRequest request) {
+    public SignupResponse signUp(RegisterRequest request) {
         _log.info("Starting registration process for email: {}", request.getEmail());
 
         try{
@@ -52,7 +114,7 @@ public class AuthServiceImpl implements IAuthService {
 
             String hashedPassword = _passwordEncoder.encode(request.getPassword());
 
-            boolean created = _userServiceRpcClient.createUser(
+            CreateUserResponse createdUser = _userServiceRpcClient.createUser(
                     request.getEmail(),
                     hashedPassword,
                     request.getPhoneNumber(),
@@ -61,16 +123,15 @@ public class AuthServiceImpl implements IAuthService {
                     request.getAvatarUrl()
             );
 
-            if (!created) {
-                _log.error("User creation failed in user-service for email: {}", request.getEmail());
-                throw new AppException(
-                        "user.created.false",
-                        Constant.RES3008,
-                        HttpStatus.INTERNAL_SERVER_ERROR.name()
-                );
-            }
             _log.info("Registration successful for email: {}", request.getEmail());
-            return true;
+
+            return SignupResponse.builder()
+                    .id(createdUser.getId())
+                    .email(createdUser.getEmail())
+                    .firstName(createdUser.getFirstName())
+                    .lastName(createdUser.getLastName())
+                    .build();
+
         }catch (RpcException rpcEx){
             _log.error("User-service RPC failed during registration. Email={}",
                     request.getEmail(), rpcEx);
