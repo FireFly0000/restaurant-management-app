@@ -1,7 +1,7 @@
 package com.restaurant.authservice.core.rpc;
 
 import com.restaurant.commons.core.rpc.user.CreateUserResponse;
-import com.restaurant.commons.core.rpc.user.FindByEmailResponse;
+import com.restaurant.commons.core.rpc.user.FoundUserResponse;
 
 public interface IUserServiceRpcClient {
     boolean existsByEmail(String email);
@@ -14,5 +14,6 @@ public interface IUserServiceRpcClient {
             String lastName,
             String avatarUrl
     );
-    FindByEmailResponse findByEmail( String email);
+    FoundUserResponse findByEmail(String email);
+    FoundUserResponse findById(String id);
 }

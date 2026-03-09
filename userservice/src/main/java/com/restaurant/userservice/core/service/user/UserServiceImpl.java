@@ -24,8 +24,7 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public User findByEmail(String email) {
-
-        return _repo.findByEmail(email);
+        return _repo.findByEmail(email).orElse(null);
     }
 
     @Override
@@ -34,8 +33,8 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public User findById(Long id) {
-        return null;
+    public User findById(UUID id) {
+        return _repo.findById(id).orElse(null);
     }
 
     @Override

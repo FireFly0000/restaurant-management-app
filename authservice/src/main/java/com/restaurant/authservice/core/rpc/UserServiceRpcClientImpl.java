@@ -25,6 +25,7 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
     /**
      * Check if user exists by email
      */
+    @Override
     public boolean existsByEmail(String email) {
         _log.info("Calling user-service via Dubbo: existsByEmail({})", email);
         ExistsByEmailRequest request = ExistsByEmailRequest.newBuilder()
@@ -38,6 +39,7 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
     /**
      * Check if user exists by phone number
      */
+    @Override
     public boolean existsByPhoneNumber(String phoneNumber) {
         _log.info("Calling user-service via Dubbo: existsByPhoneNumber({})", phoneNumber);
         ExistsByPhoneNumberRequest request = ExistsByPhoneNumberRequest.newBuilder()
@@ -48,6 +50,7 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
         return response.getExists();
     }
 
+    @Override
     public CreateUserResponse createUser(
             String email,
             String hashedPassword,
@@ -69,7 +72,8 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
         return _userServiceStub.createUser(request);
     }
 
-    public FindByEmailResponse findByEmail( String email ){
+    @Override
+    public FoundUserResponse findByEmail( String email ){
         _log.info("Calling user-service via Dubbo: findByEmail({})", email);
 
         FindByEmailRequest request = FindByEmailRequest.newBuilder()
@@ -77,5 +81,16 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
                 .build();
 
         return _userServiceStub.findByEmail(request);
+    }
+
+    @Override
+    public FoundUserResponse findById( String id ){
+        _log.info("Calling user-service via Dubbo: findById({})", id);
+
+        FindByIdRequest request = FindByIdRequest.newBuilder()
+                .setId(id)
+                .build();
+
+        return _userServiceStub.findById(request);
     }
 }

@@ -11,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @DubboService(
         version = "1.0.0",
         group = "user-service",
@@ -72,11 +74,11 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
     }
 
     @Override
-    public FindByEmailResponse findByEmail(FindByEmailRequest findByEmailRequest) {
+    public FoundUserResponse findByEmail(FindByEmailRequest findByEmailRequest) {
         try {
             User findByEmailUser = _userService.findByEmail(findByEmailRequest.getEmail());
 
-            return FindByEmailResponse.newBuilder()
+            return FoundUserResponse.newBuilder()
                     .setId(findByEmailUser.getId().toString())
                     .setEmail(findByEmailUser.getEmail())
                     .setPassword(findByEmailUser.getPassword())
@@ -89,6 +91,33 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
                     .setUserType(findByEmailUser.getUserType().toString())
                     .setIsActive(findByEmailUser.getIsActive())
                     .setIsVerified(findByEmailUser.getIsVerified())
+                    .build();
+
+        } catch (Exception e){
+            _log.error("RPC: find user by email failed", e);
+            throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
+        }
+    }
+
+    @Override
+    public FoundUserResponse findById(FindByIdRequest findByIdRequest) {
+        try {
+            UUID uuid = UUID.fromString(findByIdRequest.getId());
+            User findByIdUser = _userService.findById(uuid);
+
+            return FoundUserResponse.newBuilder()
+                    .setId(findByIdUser.getId().toString())
+                    .setEmail(findByIdUser.getEmail())
+                    .setPassword(findByIdUser.getPassword())
+                    .setFirstName(findByIdUser.getFirstName())
+                    .setLastName(findByIdUser.getLastName())
+                    .setAvatarUrl(
+                            findByIdUser.getAvatarUrl() != null
+                                    ? findByIdUser.getAvatarUrl() : ""
+                    )
+                    .setUserType(findByIdUser.getUserType().toString())
+                    .setIsActive(findByIdUser.getIsActive())
+                    .setIsVerified(findByIdUser.getIsVerified())
                     .build();
 
         } catch (Exception e){

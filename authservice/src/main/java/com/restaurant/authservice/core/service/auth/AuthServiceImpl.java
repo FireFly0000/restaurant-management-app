@@ -2,9 +2,10 @@ package com.restaurant.authservice.core.service.auth;
 
 import com.restaurant.authservice.core.rpc.IUserServiceRpcClient;
 import com.restaurant.authservice.core.service.auth.dto.*;
+import com.restaurant.authservice.core.service.jwt.IJwtService;
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.core.rpc.user.CreateUserResponse;
-import com.restaurant.commons.core.rpc.user.FindByEmailResponse;
+import com.restaurant.commons.core.rpc.user.FoundUserResponse;
 import com.restaurant.commons.exception.AppException;
 import org.apache.dubbo.rpc.RpcException;
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ public class AuthServiceImpl implements IAuthService {
     public AuthResponse signIn(LoginRequest request) {
         _log.info("Starting signing in process for email: {}", request.getEmail());
 
-        FindByEmailResponse response;
+        FoundUserResponse response;
 
         try{
             response = _userServiceRpcClient.findByEmail(request.getEmail());
@@ -54,7 +55,7 @@ public class AuthServiceImpl implements IAuthService {
           _log.error("Sign in failed. User with email {} is not active", request.getEmail());
           throw new AppException(
                   "auth.signin.account_inactive",
-                  Constant.RES30010,
+                  Constant.RES3010,
                   HttpStatus.FORBIDDEN.name()
           );
         }
@@ -63,7 +64,7 @@ public class AuthServiceImpl implements IAuthService {
             _log.error("Sign in failed. User with email {} is not verified", request.getEmail());
             throw new AppException(
                     "auth.signin.unverified_account",
-                    Constant.RES30011,
+                    Constant.RES3011,
                     HttpStatus.FORBIDDEN.name()
             );
         }
@@ -72,7 +73,7 @@ public class AuthServiceImpl implements IAuthService {
             _log.error("Sign in failed. Wrong password");
             throw new AppException(
                     "auth.signin.invalid_password",
-                    Constant.RES30012,
+                    Constant.RES3012,
                     HttpStatus.UNAUTHORIZED.name()
             );
         }
@@ -145,8 +146,48 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public AuthResponse refreshToken(RefreshTokenRequest request) {
-        return null;
+    public AuthResponse refreshToken(String refreshToken) {
+        _log.info("Processing refresh token request");
+
+        if (!_jwtService.isValidToken(refreshToken)) {
+            throw new AppException(
+                    "auth.refresh.token_invalid",
+                    Constant.RES3013,
+                    HttpStatus.UNAUTHORIZED.name()
+            );
+        }
+
+        String userId = _jwtService.extractSubject(refreshToken);
+
+        FoundUserResponse user;
+
+        try {
+            user = _userServiceRpcClient.findById(userId);
+        } catch (RpcException rpcEx) {
+            throw new AppException(
+                    "user.service.rpc.error",
+                    Constant.RES0007,
+                    HttpStatus.SERVICE_UNAVAILABLE.name()
+            );
+        }
+
+        if (!user.getIsActive() || !user.getIsVerified()) {
+            throw new AppException(
+                    "auth.refresh.token_invalid",
+                    Constant.RES3013,
+                    HttpStatus.UNAUTHORIZED.name()
+            );
+        }
+
+        String newAccessToken = _jwtService.generateAccessToken(
+                user.getId(), user.getEmail(), user.getUserType()
+        );
+        String newRefreshToken = _jwtService.generateRefreshToken(user.getId());
+
+        return AuthResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .build();
     }
 
     @Override

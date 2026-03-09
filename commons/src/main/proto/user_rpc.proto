@@ -12,7 +12,8 @@ service UserService{
     rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
 
     // Lookup
-    rpc FindByEmail(FindByEmailRequest) returns (FindByEmailResponse);
+    rpc FindByEmail(FindByEmailRequest) returns (FoundUserResponse);
+    rpc FindById(FindByIdRequest) returns (FoundUserResponse);
 }
 
 //Request messages
@@ -37,6 +38,10 @@ message FindByEmailRequest {
     string email = 1;
 }
 
+message FindByIdRequest {
+    string id = 1;
+}
+
 //Response messages
 message ExistsResponse {
     bool exists = 1;
@@ -51,7 +56,7 @@ message CreateUserResponse {
     string message = 6;
 }
 
-message FindByEmailResponse {
+message FoundUserResponse {
     string id = 1;
     string email = 2;
     string password = 3;
