@@ -19,7 +19,7 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
             retries = 2,
             check = false
     )
-    private UserService _userServiceStub;  //
+    private UserService _userServiceStub;
     private final Logger _log = LoggerFactory.getLogger(UserServiceRpcClientImpl.class);
 
     /**
@@ -52,23 +52,9 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
 
     @Override
     public CreateUserResponse createUser(
-            String email,
-            String hashedPassword,
-            String phoneNumber,
-            String firstName,
-            String lastName,
-            String avatarUrl
+        CreateUserRequest request
     ){
-        _log.info("Calling user-service via Dubbo: createUser({})", email);
-        CreateUserRequest request = CreateUserRequest.newBuilder()
-                .setEmail(email)
-                .setPassword(hashedPassword)
-                .setPhoneNumber(phoneNumber != null ? phoneNumber : "")
-                .setFirstName(firstName)
-                .setLastName(lastName)
-                .setAvatarUrl(avatarUrl != null ? avatarUrl : "")
-                .build();
-
+        _log.info("Calling user-service via Dubbo: createUser({})", request.getEmail());
         return _userServiceStub.createUser(request);
     }
 

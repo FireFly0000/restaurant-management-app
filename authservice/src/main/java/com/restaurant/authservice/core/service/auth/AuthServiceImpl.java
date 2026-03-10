@@ -4,6 +4,7 @@ import com.restaurant.authservice.core.rpc.IUserServiceRpcClient;
 import com.restaurant.authservice.core.service.auth.dto.*;
 import com.restaurant.authservice.core.service.jwt.IJwtService;
 import com.restaurant.commons.constant.Constant;
+import com.restaurant.commons.core.rpc.user.CreateUserRequest;
 import com.restaurant.commons.core.rpc.user.CreateUserResponse;
 import com.restaurant.commons.core.rpc.user.FoundUserResponse;
 import com.restaurant.commons.exception.AppException;
@@ -13,6 +14,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class AuthServiceImpl implements IAuthService {
@@ -34,14 +38,14 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public AuthResponse signIn(LoginRequest request) {
-        _log.info("Starting signing in process for email: {}", request.getEmail());
+        _log.info("signIn, Starting signing in process for email: {}", request.getEmail());
 
         FoundUserResponse response;
 
         try{
             response = _userServiceRpcClient.findByEmail(request.getEmail());
         }catch (RpcException rpcEx){
-            _log.error("User-service RPC failed during sign in. Email={}",
+            _log.error("signIn, User-service RPC failed during sign in. Email={}",
                     request.getEmail(), rpcEx);
 
             throw new AppException(
@@ -52,36 +56,38 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         if(!response.getIsActive()){
-          _log.error("Sign in failed. User with email {} is not active", request.getEmail());
+          _log.error("SignIn, failed. User with email {} is not active", request.getEmail());
           throw new AppException(
                   "auth.signin.account_inactive",
-                  Constant.RES3010,
+                  Constant.RES3007,
                   HttpStatus.FORBIDDEN.name()
           );
         }
 
-        if(response.getIsVerified()){
-            _log.error("Sign in failed. User with email {} is not verified", request.getEmail());
+        if(!response.getIsVerified()){
+            _log.error("SignIn, failed. User with email {} is not verified", request.getEmail());
             throw new AppException(
                     "auth.signin.unverified_account",
-                    Constant.RES3011,
+                    Constant.RES3007,
                     HttpStatus.FORBIDDEN.name()
             );
         }
 
         if(!_passwordEncoder.matches(request.getPassword(), response.getPassword())){
-            _log.error("Sign in failed. Wrong password");
+            _log.error("SignIn, failed. Wrong password");
             throw new AppException(
                     "auth.signin.invalid_password",
-                    Constant.RES3012,
+                    Constant.RES3008,
                     HttpStatus.UNAUTHORIZED.name()
             );
         }
 
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", response.getEmail());
+        claims.put("userType", response.getUserType());
+
         String accessToken = _jwtService.generateAccessToken(
-                response.getId(),
-                response.getEmail(),
-                response.getUserType()
+                response.getId(), claims
         );
 
         String refreshToken = _jwtService.generateRefreshToken(
@@ -95,46 +101,65 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public SignupResponse signUp(RegisterRequest request) {
-        _log.info("Starting registration process for email: {}", request.getEmail());
+    public SignupResponse signUp(SignupRequest request) {
+        _log.info("signUp, Starting registration process for email: {}", request.getEmail());
 
         try{
-            _log.info("Checking if email exists: {}", request.getEmail());
+            _log.info("signUp, Checking if email exists: {}", request.getEmail());
             boolean emailExists = _userServiceRpcClient.existsByEmail(request.getEmail());
             if (emailExists) {
-                _log.warn("Registration failed: Email already exists - {}", request.getEmail());
-                throw new AppException("auth.signup.email_exists", Constant.RES3006, HttpStatus.BAD_REQUEST.name());
+                _log.warn("signUp, failed: Email already exists - {}", request.getEmail());
+                throw new AppException(
+                        "auth.signup.email_exists",
+                        Constant.RES3005,
+                        HttpStatus.BAD_REQUEST.name()
+                );
             }
 
-            _log.info("Checking if phone number exists: {}", request.getPhoneNumber());
+            _log.info("signUp, checking if phone number exists: {}", request.getPhoneNumber());
             boolean phoneNumberExists = _userServiceRpcClient.existsByPhoneNumber(request.getPhoneNumber());
             if (phoneNumberExists) {
-                _log.warn("Registration failed: Phone number already exists - {}", request.getPhoneNumber());
-                throw new AppException("auth.signup.phone_exists", Constant.RES3007, HttpStatus.BAD_REQUEST.name());
+                _log.warn("signUp, failed: Phone number already exists - {}", request.getPhoneNumber());
+                throw new AppException(
+                        "auth.signup.phone_exists",
+                        Constant.RES3005,
+                        HttpStatus.BAD_REQUEST.name()
+                );
             }
 
             String hashedPassword = _passwordEncoder.encode(request.getPassword());
 
-            CreateUserResponse createdUser = _userServiceRpcClient.createUser(
-                    request.getEmail(),
-                    hashedPassword,
-                    request.getPhoneNumber(),
-                    request.getFirstName(),
-                    request.getLastName(),
-                    request.getAvatarUrl()
-            );
+            CreateUserRequest rpcRequest = CreateUserRequest.newBuilder()
+                    .setEmail(request.getEmail())
+                    .setPassword(hashedPassword)
+                    .setPhoneNumber(
+                            request.getPhoneNumber() != null ?
+                                    request.getPhoneNumber() :
+                                    ""
+                    )
+                    .setFirstName(request.getFirstName())
+                    .setLastName(request.getLastName())
+                    .setAvatarUrl(
+                            request.getAvatarUrl() != null ?
+                                    request.getAvatarUrl() :
+                                    ""
+                    )
+                    .build();
 
-            _log.info("Registration successful for email: {}", request.getEmail());
+            CreateUserResponse createdUser = _userServiceRpcClient.createUser(rpcRequest);
+
+            _log.info("signUp, successful for email: {}", request.getEmail());
 
             return SignupResponse.builder()
                     .id(createdUser.getId())
                     .email(createdUser.getEmail())
                     .firstName(createdUser.getFirstName())
                     .lastName(createdUser.getLastName())
+                    .phoneNumber(createdUser.getPhoneNumber())
                     .build();
 
         }catch (RpcException rpcEx){
-            _log.error("User-service RPC failed during registration. Email={}",
+            _log.error("signUp, User-service RPC failed during registration. Email={}",
                     request.getEmail(), rpcEx);
 
             throw new AppException(
@@ -147,12 +172,12 @@ public class AuthServiceImpl implements IAuthService {
 
     @Override
     public AuthResponse refreshToken(String refreshToken) {
-        _log.info("Processing refresh token request");
+        _log.info("refreshToken, processing refresh token request");
 
         if (!_jwtService.isValidToken(refreshToken)) {
             throw new AppException(
                     "auth.refresh.token_invalid",
-                    Constant.RES3013,
+                    Constant.RES3008,
                     HttpStatus.UNAUTHORIZED.name()
             );
         }
@@ -174,19 +199,22 @@ public class AuthServiceImpl implements IAuthService {
         if (!user.getIsActive() || !user.getIsVerified()) {
             throw new AppException(
                     "auth.refresh.token_invalid",
-                    Constant.RES3013,
-                    HttpStatus.UNAUTHORIZED.name()
+                    Constant.RES3007,
+                    HttpStatus.FORBIDDEN.name()
             );
         }
 
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", user.getEmail());
+        claims.put("userType", user.getUserType());
+
         String newAccessToken = _jwtService.generateAccessToken(
-                user.getId(), user.getEmail(), user.getUserType()
+                user.getId(), claims
         );
-        String newRefreshToken = _jwtService.generateRefreshToken(user.getId());
 
         return AuthResponse.builder()
                 .accessToken(newAccessToken)
-                .refreshToken(newRefreshToken)
+                .refreshToken(refreshToken)
                 .build();
     }
 

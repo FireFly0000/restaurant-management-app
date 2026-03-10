@@ -24,20 +24,17 @@ public class JwtServiceImpl implements IJwtService {
     private static final Logger _log = LoggerFactory.getLogger(JwtServiceImpl.class);
 
     public JwtServiceImpl(AuthServiceProperties properties){
-        this._secretKey = getSecretKey(properties.getSecret());
-        this._accessTokenExpiration = properties.getAccessTokenExpiration();
-        this._refreshTokenExpiration = properties.getRefreshTokenExpiration();
+        this._secretKey = getSecretKey(properties.getJwt().getSecret());
+        this._accessTokenExpiration = properties.getJwt().getAccessTokenExpiration();
+        this._refreshTokenExpiration = properties.getJwt().getRefreshTokenExpiration();
     }
 
     @Override
-    public String generateAccessToken(String userId, String email, String userType) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("email", email);
-        claims.put("userType", userType);
+    public String generateAccessToken(String userId, Map<String, Object> extraClaims) {
 
         return Jwts.builder()
                 .subject(userId)
-                .claims(claims)
+                .claims(extraClaims)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + _accessTokenExpiration))
                 .signWith(_secretKey)
@@ -48,6 +45,17 @@ public class JwtServiceImpl implements IJwtService {
     public String generateRefreshToken(String userId) {
         return Jwts.builder()
                 .subject(userId)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + _refreshTokenExpiration))
+                .signWith(_secretKey)
+                .compact();
+    }
+
+    @Override
+    public String generateRefreshToken(String userId, Map<String, Object> extraClaims) {
+        return Jwts.builder()
+                .subject(userId)
+                .claims(extraClaims)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + _refreshTokenExpiration))
                 .signWith(_secretKey)

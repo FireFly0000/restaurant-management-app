@@ -61,15 +61,10 @@ public class Constant {
     public static final String RES3002 = "RES3002"; // Resource Already Exists
     public static final String RES3003 = "RES3003"; // Action Isn't Allowed
     public static final String RES3004 = "RES3004"; // The Payload of notification is invalid
-    public static final String RES3005 = "RES3005"; // Confirm password and password do not match
-    public static final String RES3006 = "RES3006"; // Email already exists
-    public static final String RES3007 = "RES3007"; // Phone number already exists
-    public static final String RES3008 = "RES3008"; // Failed Creating new user
-    public static final String RES3009 = "RES3009"; // Resource couldn't be saved.
-    public static final String RES3010 = "RES3010"; // User is not active
-    public static final String RES3011 = "RES3011"; // User is not verified
-    public static final String RES3012 = "RES3012"; // Wrong password
-    public static final String RES3013 = "RES3013"; // Invalid refresh token
+    public static final String RES3005 = "RES3005"; // Bad Request
+    public static final String RES3006 = "RES3006"; // Resource couldn't be saved.
+    public static final String RES3007 = "RES3007"; // Forbidden user
+    public static final String RES3008 = "RES3008"; // Unauthorized user
 
 
     /* TASK */

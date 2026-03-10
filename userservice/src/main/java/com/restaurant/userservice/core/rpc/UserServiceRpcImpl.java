@@ -63,6 +63,7 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
                     .setEmail(request.getEmail())
                     .setFirstName(request.getFirstName())
                     .setLastName(request.getLastName())
+                    .setPhoneNumber(request.getPhoneNumber())
                     .setSuccess(true)
                     .setMessage("User created successfully")
                     .build();

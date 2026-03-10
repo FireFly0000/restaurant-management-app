@@ -1,7 +1,11 @@
 package com.restaurant.authservice.core.service.jwt;
 
+import java.util.Map;
+import java.util.Optional;
+
 public interface IJwtService {
-    String generateAccessToken(String userId, String email, String userType);
+    String generateAccessToken(String userId, Map<String, Object> extraClaims);
+    String generateRefreshToken(String userId, Map<String, Object> extraClaims);
     String generateRefreshToken(String userId);
     boolean isValidToken(String token);
     String extractSubject(String token);  // extract userId

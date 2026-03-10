@@ -52,8 +52,9 @@ message CreateUserResponse {
     string email = 2;
     string first_name = 3;
     string last_name = 4;
-    bool success = 5;
-    string message = 6;
+    string phone_number = 5;
+    bool success = 6;
+    string message = 7;
 }
 
 message FoundUserResponse {

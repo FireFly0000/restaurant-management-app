@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -24,7 +25,15 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public User findByEmail(String email) {
-        return _repo.findByEmail(email).orElse(null);
+        Optional<User> obj = _repo.findByEmail(email);
+
+        if(obj.isPresent()){
+            _log.debug("findByEmail, user is found with {}", email);
+            return obj.get();
+        }
+
+        _log.warn("findByEmail, user not found with email {}", email);
+        return null;
     }
 
     @Override
@@ -34,7 +43,15 @@ public class UserServiceImpl implements IUserService {
 
     @Override
     public User findById(UUID id) {
-        return _repo.findById(id).orElse(null);
+        Optional<User> obj = _repo.findById(id);
+
+        if(obj.isPresent()){
+            _log.debug("findById, user is found with {}", id);
+            return obj.get();
+        }
+
+        _log.warn("findById, user not found with {}", id);
+        return null;
     }
 
     @Override

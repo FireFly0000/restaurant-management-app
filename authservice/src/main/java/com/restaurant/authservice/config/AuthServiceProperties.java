@@ -7,11 +7,17 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 
-@ConfigurationProperties(prefix = "app.auth.jwt")
+@ConfigurationProperties(prefix = "app.auth")
 @Data
 @Configuration
 public class AuthServiceProperties {
-    private String secret;
-    private long accessTokenExpiration;
-    private long refreshTokenExpiration;
+
+    private Jwt jwt;
+
+    @Data
+    public static class Jwt {
+        private String secret;
+        private long accessTokenExpiration;
+        private long refreshTokenExpiration;
+    }
 }
