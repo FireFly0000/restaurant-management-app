@@ -23,6 +23,7 @@
         <module>userservice</module>
         <module>authservice</module>
         <module>notificationservice</module>
+        <module>storageservice</module>
     </modules>
 
     <properties>
@@ -54,6 +55,9 @@
         <postgresql.version>42.7.8</postgresql.version>
         <lombok.version>1.18.42</lombok.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
+
+        <!-- AWS SDK -->
+        <awssdk-s3.version>2.42.8</awssdk-s3.version>
     </properties>
 
     <repositories>
@@ -183,6 +187,12 @@
                 <groupId>io.confluent</groupId>
                 <artifactId>kafka-protobuf-serializer</artifactId>
                 <version>${kafka-protobuf-serializer.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>s3</artifactId>
+                <version>${awssdk-s3.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

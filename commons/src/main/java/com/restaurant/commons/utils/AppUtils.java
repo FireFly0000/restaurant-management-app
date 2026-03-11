@@ -22,4 +22,8 @@ public class AppUtils {
             return null;
         }
     }
+
+    public static String createUploadFilePath(String businessId, String module, String fileName){
+        return String.format("%s/%s/%s", businessId, module, fileName);
+    }
 }
