@@ -1,0 +1,177 @@
+server:
+  port: ${STORAGE_PORT:8088}
+  shutdown: graceful
+
+spring:
+  application:
+    name: ${STORAGE_APPLICATION_NAME:storage-service}
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_HOST:localhost}:${NACOS_PORT:8848}
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:dev}
+
+  # Redis Configuration (for token storage and caching)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 2
+      timeout: 10s
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+          max-wait: 3s
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
+      acks: all
+      properties:
+        schema.registry.url: ${SCHEMA_REGISTRY_HOST:http://localhost}:${SCHEMA_REGISTRY_PORT:8081}
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        retry.backoff.ms: 1000
+        delivery.timeout.ms: 120000
+        request.timeout.ms: 10000
+        linger.ms: 5
+        batch.size: 16384
+        buffer.memory: 33554432
+        compression.type: snappy
+
+    consumer:
+      group-id: storage-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer
+      enable-auto-commit: false
+      properties:
+        schema.registry.url: ${SCHEMA_REGISTRY_HOST:http://localhost}:${SCHEMA_REGISTRY_PORT:8081}
+        derive.type: true
+        max.poll.records: 100
+        max.poll.interval.ms: 300000
+        session.timeout.ms: 45000
+        heartbeat.interval.ms: 15000
+
+    listener:
+      ack-mode: manual
+      concurrency: 3
+      type: batch
+
+    admin:
+      auto-create: true
+      properties:
+        cleanup.policy: delete
+        retention.ms: 604800000
+
+# Dubbo Configuration for gRPC
+dubbo:
+  config-center:
+    address: none
+
+  application:
+    name: ${STORAGE_APPLICATION_NAME:storage-service}
+    qos-enable: false
+
+  registry:
+    address: nacos://${NACOS_HOST:localhost}:${NACOS_PORT:8848}
+    username: ${NACOS_USERNAME:nacos}
+    password: ${NACOS_PASSWORD:nacos}
+    parameters:
+      namespace: ${NACOS_NAMESPACE:dev}
+    use-as-config-center: false
+    use-as-metadata-center: false
+
+  protocol:
+    name: tri
+    port: ${STORAGE_DUBBO_PORT:20882}
+
+  consumer:
+    check: false
+    timeout: 30000
+    retries: 2
+    loadbalance: roundrobin
+
+
+# Actuator Configuration
+#management:
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health, info, metrics, prometheus
+#      base-path: /actuator
+#  endpoint:
+#    health:
+#      show-details: when_authorized
+#      probes:
+#        enabled: true
+#  health:
+#    db:
+#      enabled: true
+#    redis:
+#      enabled: true
+#    kafka:
+#      enabled: true
+#  metrics:
+#    export:
+#      prometheus:
+#        enabled: true
+#    tags:
+#      application: ${spring.application.name}
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.platform.authservice: DEBUG
+    org.apache.dubbo: INFO
+    org.springframework.kafka: INFO
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] %logger{36} - %msg%n"
+
+# Application-specific configuration
+app:
+  storage:
+    kafka:
+      retry:
+        max-attempts: 3
+        interval-ms: 2000
+      consumer:
+        concurency: 3
+    # Cache settings
+    cache:
+      ttl-seconds: 3600
+      prefix: "storage:"
+    # Outbox settings
+    outbox:
+      core-pool-size: 5
+      max-pool-size: 20
+      queue-capacity: 100
+      thread-name-prefix: "StorageOutboxWorker-"
+      batch-size: 50
+      max_retries: 3
+
+    cloudflare:
+      r2:
+        account-id: ${CLOUDFLARE_R2_ACCOUNT_ID}
+        access-key: ${CLOUDFLARE_R2_ACCESS_KEY}
+        secret-key: ${CLOUDFLARE_R2_SECRET_KEY}
+        url: ${CLOUDFLARE_R2_URL}
+        public-bucket: ${CLOUDFLARE_R2_PUBLIC_BUCKET}
+        private-bucket: ${CLOUDFLARE_R2_PRIVATE_BUCKET}
+
