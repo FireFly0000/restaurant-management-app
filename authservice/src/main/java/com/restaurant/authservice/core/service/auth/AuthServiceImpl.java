@@ -55,6 +55,16 @@ public class AuthServiceImpl implements IAuthService {
             );
         }
 
+        // check found flag first
+        if (!response.getFound()) {
+            _log.error("SignIn, failed. User with email {} is not found", request.getEmail());
+            throw new AppException(
+                    "auth.signin.user_not_found",
+                    Constant.RES3002,
+                    HttpStatus.UNAUTHORIZED.name()
+            );
+        }
+
         if(!response.getIsActive()){
           _log.error("SignIn, failed. User with email {} is not active", request.getEmail());
           throw new AppException(
@@ -68,6 +78,15 @@ public class AuthServiceImpl implements IAuthService {
             _log.error("SignIn, failed. User with email {} is not verified", request.getEmail());
             throw new AppException(
                     "auth.signin.unverified_account",
+                    Constant.RES3007,
+                    HttpStatus.FORBIDDEN.name()
+            );
+        }
+
+        if(response.getIsDeleted()){
+            _log.error("SignIn, failed. User with email {} is deleted", request.getEmail());
+            throw new AppException(
+                    "auth.signin.deleted_account",
                     Constant.RES3007,
                     HttpStatus.FORBIDDEN.name()
             );
@@ -175,6 +194,7 @@ public class AuthServiceImpl implements IAuthService {
         _log.info("refreshToken, processing refresh token request");
 
         if (!_jwtService.isValidToken(refreshToken)) {
+            _log.error("refreshToken, invalid refreshToken {}", refreshToken);
             throw new AppException(
                     "auth.refresh.token_invalid",
                     Constant.RES3008,
@@ -189,6 +209,8 @@ public class AuthServiceImpl implements IAuthService {
         try {
             user = _userServiceRpcClient.findById(userId);
         } catch (RpcException rpcEx) {
+            _log.error("refreshToken, User-service RPC failed during refreshToken. id={}",
+                    userId, rpcEx);
             throw new AppException(
                     "user.service.rpc.error",
                     Constant.RES0007,
@@ -196,7 +218,17 @@ public class AuthServiceImpl implements IAuthService {
             );
         }
 
-        if (!user.getIsActive() || !user.getIsVerified()) {
+        if(!user.getFound()){
+            _log.error("refreshToken, failed. User with id {} is not found", userId);
+            throw new AppException(
+                    "auth.signin.user_not_found",
+                    Constant.RES3002,
+                    HttpStatus.UNAUTHORIZED.name()
+            );
+        }
+
+        if (!user.getIsActive() || !user.getIsVerified() || user.getIsDeleted()) {
+            _log.error("refreshToken, failed. Invalid token with userId {}", userId);
             throw new AppException(
                     "auth.refresh.token_invalid",
                     Constant.RES3007,

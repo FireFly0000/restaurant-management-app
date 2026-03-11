@@ -1,6 +1,8 @@
 package com.restaurant.userservice.core.rpc;
 
+import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.core.enums.UserType;
+import com.restaurant.commons.exception.AppException;
 import com.restaurant.userservice.core.service.user.IUserService;
 import com.restaurant.commons.core.rpc.user.*;
 import com.restaurant.userservice.model.User;
@@ -9,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -79,6 +82,12 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
         try {
             User findByEmailUser = _userService.findByEmail(findByEmailRequest.getEmail());
 
+            if (findByEmailUser == null) {
+                return FoundUserResponse.newBuilder()
+                        .setFound(false)
+                        .build();
+            }
+
             return FoundUserResponse.newBuilder()
                     .setId(findByEmailUser.getId().toString())
                     .setEmail(findByEmailUser.getEmail())
@@ -92,6 +101,8 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
                     .setUserType(findByEmailUser.getUserType().toString())
                     .setIsActive(findByEmailUser.getIsActive())
                     .setIsVerified(findByEmailUser.getIsVerified())
+                    .setIsDeleted(findByEmailUser.getIsDeleted())
+                    .setFound(true)
                     .build();
 
         } catch (Exception e){
@@ -106,6 +117,12 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
             UUID uuid = UUID.fromString(findByIdRequest.getId());
             User findByIdUser = _userService.findById(uuid);
 
+            if (findByIdUser == null) {
+                return FoundUserResponse.newBuilder()
+                        .setFound(false)
+                        .build();
+            }
+
             return FoundUserResponse.newBuilder()
                     .setId(findByIdUser.getId().toString())
                     .setEmail(findByIdUser.getEmail())
@@ -119,6 +136,8 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
                     .setUserType(findByIdUser.getUserType().toString())
                     .setIsActive(findByIdUser.getIsActive())
                     .setIsVerified(findByIdUser.getIsVerified())
+                    .setIsDeleted(findByIdUser.getIsDeleted())
+                    .setFound(true)
                     .build();
 
         } catch (Exception e){
