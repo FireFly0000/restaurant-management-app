@@ -1,6 +1,7 @@
 package com.restaurant.businessservice.core.service.business;
 
 import com.restaurant.businessservice.common.MsgUtil;
+import com.restaurant.businessservice.config.BusinessProperties;
 import com.restaurant.businessservice.core.context.RequestContext;
 import com.restaurant.businessservice.core.kafka.KafkaProducerWrapper;
 import com.restaurant.businessservice.core.repository.IBusinessRepository;
@@ -27,22 +28,25 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 public class BusinessServiceImpl implements IBusinessService {
+    private static final Logger _log = LoggerFactory.getLogger(BusinessServiceImpl.class);
     private final IBusinessRepository _repo;
     private final IBusinessServiceRpcClient _businessRpcClient;
     private final MsgUtil _msgUtil;
     private final KafkaProducerWrapper _kafka;
-    private static final Logger _log = LoggerFactory.getLogger(BusinessServiceImpl.class);
+    private final BusinessProperties _properties;
 
     public BusinessServiceImpl(
             IBusinessRepository _repo,
             MsgUtil _msgUtil,
             IBusinessServiceRpcClient _businessRpcClient,
-            KafkaProducerWrapper _kafka
+            KafkaProducerWrapper _kafka,
+            BusinessProperties _properties
     ) {
         this._repo = _repo;
         this._msgUtil = _msgUtil;
         this._businessRpcClient = _businessRpcClient;
         this._kafka = _kafka;
+        this._properties = _properties;
     }
 
     @Override
@@ -102,12 +106,14 @@ public class BusinessServiceImpl implements IBusinessService {
         CompletableFuture<String> avatarTask = null;
         CompletableFuture<String> coverImgTask = null;
         try {
+            BusinessProperties.Cloudflare.R2 r2 = _properties.getCloudflare().getR2();
+
             avatarTask = request.getAvatarUrl() != null ? CompletableFuture.supplyAsync(() -> {
-                return _businessRpcClient.createFileOnCloud(request.getAvatarUrl());
+                return _businessRpcClient.createFileOnCloud(request.getAvatarUrl(), r2.getPublicBucket(), Constant.STORAGE_AVATAR);
             }) : CompletableFuture.completedFuture(null);
 
             coverImgTask = request.getCoverImg() != null ? CompletableFuture.supplyAsync(() -> {
-                return _businessRpcClient.createFileOnCloud(request.getCoverImg());
+                return _businessRpcClient.createFileOnCloud(request.getCoverImg(), r2.getPublicBucket(), Constant.STORAGE_COVER_IMAGE);
             }) : CompletableFuture.completedFuture(null);
 
             CompletableFuture.allOf(avatarTask, coverImgTask).join();
@@ -175,8 +181,9 @@ public class BusinessServiceImpl implements IBusinessService {
         _log.info("updateCoverImage, Start updating cover image of Business with id = {}", id);
         Business business = this.getByIdAndThrow(id);
         String url = null;
+        BusinessProperties.Cloudflare.R2 r2 = _properties.getCloudflare().getR2();
         try{
-            url = this._businessRpcClient.createFileOnCloud(request.getFile());
+            url = this._businessRpcClient.createFileOnCloud(request.getFile(), r2.getPublicBucket(), Constant.STORAGE_COVER_IMAGE);
             business.setCoverImgUrl(url);
             this.save(business);
             _log.info("updateCoverImage, Business's cover image updated with id = {}", id);
@@ -195,8 +202,9 @@ public class BusinessServiceImpl implements IBusinessService {
         _log.info("updateAvatar, Start updating cover image of Business with id = {}", id);
         Business business = this.getByIdAndThrow(id);
         String url = null;
+        BusinessProperties.Cloudflare.R2 r2 = _properties.getCloudflare().getR2();;
         try{
-            url = this._businessRpcClient.createFileOnCloud(request.getFile());
+            url = this._businessRpcClient.createFileOnCloud(request.getFile(), r2.getPublicBucket(), Constant.STORAGE_AVATAR);
             business.setCoverImgUrl(url);
             this.save(business);
             _log.info("updateAvatar, Business's cover image updated with id = {}", id);
