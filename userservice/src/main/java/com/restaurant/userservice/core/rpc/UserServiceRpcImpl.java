@@ -156,6 +156,7 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
         user.setAvatarUrl(request.getAvatarUrl().isEmpty() ? null : request.getAvatarUrl());
         user.setIsActive(true);
         user.setIsVerified(false);
+        user.setIsDeleted(false);
         user.setUserType(UserType.CUSTOMER);
         return user;
     }
