@@ -197,3 +197,8 @@ app:
       batch-size: 50
       max_retries: 3
 
+    cloudflare:
+      r2:
+        public-bucket: ${CLOUDFLARE_R2_PUBLIC_BUCKET}
+        private-bucket: ${CLOUDFLARE_R2_PRIVATE_BUCKET}
+

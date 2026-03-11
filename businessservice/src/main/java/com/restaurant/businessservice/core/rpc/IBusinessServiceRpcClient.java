@@ -7,6 +7,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface IBusinessServiceRpcClient {
-    String createFileOnCloud(MultipartFile file);
+    String createFileOnCloud(MultipartFile file,String bucketName, String fileCategory);
     List<String> createFilesOnCloud(List<MultipartFile> files);
 }
