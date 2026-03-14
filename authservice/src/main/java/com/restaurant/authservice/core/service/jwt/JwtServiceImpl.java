@@ -86,6 +86,20 @@ public class JwtServiceImpl implements IJwtService {
                 .get(key, type);
     }
 
+    @Override
+    public long getTokenTtlSeconds(String token){
+        try {
+            Date expiration = extractClaim(token, Claims::getExpiration);
+            long now = System.currentTimeMillis();
+            long ttlMillis = expiration.getTime() - now;
+
+            long ttlSeconds = ttlMillis / 1000;
+            return Math.max(ttlSeconds, 0);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
 
     private boolean isTokenExpired(String token){
         try{

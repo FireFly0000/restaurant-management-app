@@ -6,6 +6,7 @@ public interface IAuthService {
     AuthResponse signIn(LoginRequest request);
     SignupResponse signUp(SignupRequest request);
     AuthResponse refreshToken(String refreshToken);
+    void signOut(String refreshToken, String accessToken);
     Boolean forgotPassword(ForgotPasswordRequest request);
     Boolean resetPassword(ResetPasswordRequest request);
     Boolean validateToken(ValidateTokenRequest request);

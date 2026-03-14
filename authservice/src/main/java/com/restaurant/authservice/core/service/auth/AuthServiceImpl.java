@@ -2,12 +2,14 @@ package com.restaurant.authservice.core.service.auth;
 
 import com.restaurant.authservice.core.rpc.IUserServiceRpcClient;
 import com.restaurant.authservice.core.service.auth.dto.*;
+import com.restaurant.authservice.core.service.blacklist.IBackListService;
 import com.restaurant.authservice.core.service.jwt.IJwtService;
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.core.rpc.user.CreateUserRequest;
 import com.restaurant.commons.core.rpc.user.CreateUserResponse;
 import com.restaurant.commons.core.rpc.user.FoundUserResponse;
 import com.restaurant.commons.exception.AppException;
+import io.jsonwebtoken.Claims;
 import org.apache.dubbo.rpc.RpcException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,15 +28,18 @@ public class AuthServiceImpl implements IAuthService {
     private final Logger _log = LoggerFactory.getLogger(AuthServiceImpl.class);
     private final PasswordEncoder _passwordEncoder;
     private final IJwtService _jwtService;
+    private final IBackListService _blacklistService;
 
     public AuthServiceImpl(
             IUserServiceRpcClient userServiceRpcClient,
             PasswordEncoder passwordEncoder,
-            IJwtService jwtService
+            IJwtService jwtService,
+            IBackListService backListService
     ){
         this._userServiceRpcClient = userServiceRpcClient;
         this._passwordEncoder = passwordEncoder;
         this._jwtService = jwtService;
+        this._blacklistService = backListService;
     }
 
     @Override
@@ -248,6 +254,21 @@ public class AuthServiceImpl implements IAuthService {
                 .accessToken(newAccessToken)
                 .refreshToken(refreshToken)
                 .build();
+    }
+
+    @Override
+    public void signOut(String accessToken, String refreshToken) {
+        _log.info("signOut, processing sign out request");
+
+        // Blacklist access token
+        _blacklistService.blacklistToken(accessToken);
+
+        // Blacklist refresh token if provided
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            _blacklistService.blacklistToken(refreshToken);
+        }
+
+        _log.info("signOut, tokens blacklisted successfully");
     }
 
     @Override

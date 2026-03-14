@@ -13,11 +13,17 @@ import javax.crypto.SecretKey;
 public class AuthServiceProperties {
 
     private Jwt jwt;
+    private Blacklist blacklist;
 
     @Data
     public static class Jwt {
         private String secret;
         private long accessTokenExpiration;
         private long refreshTokenExpiration;
+    }
+
+    @Data
+    public static class Blacklist {
+        private String prefix;
     }
 }

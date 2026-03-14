@@ -76,4 +76,33 @@ public class AuthController {
                 HttpStatus.OK
         );
     }
+
+    @PostMapping("/sign-out")
+    public ResponseEntity<?> signOut(
+            @RequestHeader("X-Refresh-Token") String refreshToken,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        _log.info("signOut, request received");
+
+        if (
+                refreshToken == null ||
+                authHeader == null ||
+                !authHeader.startsWith("Bearer ")
+        ) {
+            throw new AppException(
+                    "auth.signout.tokens.missing",
+                    Constant.RES3008,
+                    HttpStatus.UNAUTHORIZED.name()
+            );
+        }
+
+        String accessToken = authHeader.substring(7);
+
+        _authService.signOut(accessToken, refreshToken);
+
+        return new ResponseEntity<>(
+                AppUtils.buildResponse(Utils.getMessage("auth.signout.success"), null, null),
+                HttpStatus.OK
+        );
+    }
 }

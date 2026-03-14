@@ -10,4 +10,5 @@ public interface IJwtService {
     boolean isValidToken(String token);
     String extractSubject(String token);  // extract userId
     <T> T  extractClaim(String token, String key, Class<T> type);  // extract email, userType
+    long getTokenTtlSeconds(String token);
 }
