@@ -17,7 +17,6 @@ import java.util.UUID;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
-@AllArgsConstructor
 @NoArgsConstructor
 @SQLRestriction("is_deleted = false")
 public class Business extends BaseEntity {

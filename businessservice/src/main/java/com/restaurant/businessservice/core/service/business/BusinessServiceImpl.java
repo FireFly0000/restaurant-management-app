@@ -3,6 +3,7 @@ package com.restaurant.businessservice.core.service.business;
 import com.restaurant.businessservice.common.MsgUtil;
 import com.restaurant.businessservice.config.BusinessProperties;
 import com.restaurant.businessservice.core.context.RequestContext;
+import com.restaurant.businessservice.core.kafka.KafkaProducer;
 import com.restaurant.businessservice.core.kafka.KafkaProducerWrapper;
 import com.restaurant.businessservice.core.repository.IBusinessRepository;
 import com.restaurant.businessservice.core.rpc.IBusinessServiceRpcClient;
@@ -14,6 +15,7 @@ import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.constant.KafkaTopic;
 import com.restaurant.commons.core.UserContext;
 import com.restaurant.commons.core.enums.BusinessType;
+import com.restaurant.commons.core.enums.FileCategory;
 import com.restaurant.commons.core.rpc.storage.FileCleanUpEvent;
 import com.restaurant.commons.exception.AppException;
 import com.restaurant.commons.utils.AppUtils;
@@ -32,14 +34,14 @@ public class BusinessServiceImpl implements IBusinessService {
     private final IBusinessRepository _repo;
     private final IBusinessServiceRpcClient _businessRpcClient;
     private final MsgUtil _msgUtil;
-    private final KafkaProducerWrapper _kafka;
+    private final KafkaProducer _kafka;
     private final BusinessProperties _properties;
 
     public BusinessServiceImpl(
             IBusinessRepository _repo,
             MsgUtil _msgUtil,
             IBusinessServiceRpcClient _businessRpcClient,
-            KafkaProducerWrapper _kafka,
+            KafkaProducer _kafka,
             BusinessProperties _properties
     ) {
         this._repo = _repo;
@@ -102,24 +104,48 @@ public class BusinessServiceImpl implements IBusinessService {
                 .businessType(BusinessType.valueOf(request.getBusinessType()))
                 .build();
 
+        // Save to get UUID
+        Business createdBusiness = _repo.save(business);
+        UUID businessId = createdBusiness.getId();
+
         // Call Storage Service via gRPC to save images into the cloud service.
-        CompletableFuture<String> avatarTask = null;
-        CompletableFuture<String> coverImgTask = null;
+        CompletableFuture<String> avatarTask = CompletableFuture.completedFuture(null);
+        CompletableFuture<String> coverImgTask = CompletableFuture.completedFuture(null);
         try {
             BusinessProperties.Cloudflare.R2 r2 = _properties.getCloudflare().getR2();
 
-            avatarTask = request.getAvatarUrl() != null ? CompletableFuture.supplyAsync(() -> {
-                return _businessRpcClient.createFileOnCloud(request.getAvatarUrl(), r2.getPublicBucket(), Constant.STORAGE_AVATAR);
-            }) : CompletableFuture.completedFuture(null);
+            if (request.getAvatarUrl() != null) {
+                avatarTask = CompletableFuture.supplyAsync(() -> {
+                    String url = _businessRpcClient.createFileOnCloud(
+                            request.getAvatarUrl(),
+                            FileCategory.AVATAR,
+                            r2.getPublicBucket(),
+                            businessId.toString()
+                    );
+                    // Throw to catch
+                    if (url == null) throw new RuntimeException();
+                    return url;
+                });
+            }
 
-            coverImgTask = request.getCoverImg() != null ? CompletableFuture.supplyAsync(() -> {
-                return _businessRpcClient.createFileOnCloud(request.getCoverImg(), r2.getPublicBucket(), Constant.STORAGE_COVER_IMAGE);
-            }) : CompletableFuture.completedFuture(null);
+            if (request.getCoverImg() != null) {
+                coverImgTask = CompletableFuture.supplyAsync(() -> {
+                    String url = _businessRpcClient.createFileOnCloud(
+                            request.getCoverImg(),
+                            FileCategory.COVER_IMAGE,
+                            r2.getPublicBucket(),
+                            businessId.toString()
+                    );
+                    // Throw to catch
+                    if (url == null) throw new RuntimeException();
+                    return url;
+                });
+            }
 
             CompletableFuture.allOf(avatarTask, coverImgTask).join();
 
-            business.setAvatarUrl(avatarTask.get());
-            business.setCoverImgUrl(coverImgTask.get());
+            business.setAvatarUrl(avatarTask.join());
+            business.setCoverImgUrl(coverImgTask.join());
 
             Business saved = this.save(business);
             _log.info("create, Business saved with id = {}", saved.getId());
@@ -183,7 +209,16 @@ public class BusinessServiceImpl implements IBusinessService {
         String url = null;
         BusinessProperties.Cloudflare.R2 r2 = _properties.getCloudflare().getR2();
         try{
-            url = this._businessRpcClient.createFileOnCloud(request.getFile(), r2.getPublicBucket(), Constant.STORAGE_COVER_IMAGE);
+            url = this._businessRpcClient.createFileOnCloud(
+                    request.getFile(),
+                    FileCategory.COVER_IMAGE,
+                    r2.getPublicBucket(),
+                    business.getId().toString()
+            );
+
+            // Throw to catch
+            if(url == null) throw new RuntimeException();
+
             business.setCoverImgUrl(url);
             this.save(business);
             _log.info("updateCoverImage, Business's cover image updated with id = {}", id);
@@ -204,7 +239,16 @@ public class BusinessServiceImpl implements IBusinessService {
         String url = null;
         BusinessProperties.Cloudflare.R2 r2 = _properties.getCloudflare().getR2();;
         try{
-            url = this._businessRpcClient.createFileOnCloud(request.getFile(), r2.getPublicBucket(), Constant.STORAGE_AVATAR);
+            url = this._businessRpcClient.createFileOnCloud(
+                    request.getFile(),
+                    FileCategory.AVATAR,
+                    r2.getPublicBucket(),
+                    business.getId().toString()
+            );
+
+            // Throw to catch
+            if(url == null) throw new RuntimeException();
+
             business.setCoverImgUrl(url);
             this.save(business);
             _log.info("updateAvatar, Business's cover image updated with id = {}", id);
@@ -236,10 +280,7 @@ public class BusinessServiceImpl implements IBusinessService {
             FileCleanUpEvent event = FileCleanUpEvent.newBuilder()
                     .addAllUrls(validUrls)
                     .build();
-            Map<String, String> headers = new HashMap<>();
-            headers.put(Constant.H_EVENT_ID, UUID.randomUUID().toString());
-            _kafka.sendMessage(KafkaTopic.FILE_CLEANUP, key, event, headers);
-            _log.debug("fileCleanUp, Pushed cleanup event key={}", key);
+            _kafka.pushStorageFileCleanUpEvent(key, event, new HashMap<>());
         }
     }
 }

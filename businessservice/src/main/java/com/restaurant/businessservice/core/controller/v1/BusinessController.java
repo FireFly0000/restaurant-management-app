@@ -34,9 +34,9 @@ public class BusinessController {
         this._msgUtil = _msgUtil;
     }
 
-    @PostMapping(value = "/", consumes = "application/json", produces = "application/json")
+    @PostMapping(value = "/", produces = "application/json")
     @PreAuthorize("@_authorizer.isLogedIn()")
-    public ResponseEntity<?> create(@RequestBody @Valid CreateBusinessRequest request){
+    public ResponseEntity<?> create(@ModelAttribute @Valid CreateBusinessRequest request){
         Business business = this._businessService.create(request);
         BusinessResponse response = MapperUtils.getBusinessResponse(business, new HashMap<>());
         ApiResponse apiResponse = AppUtils.buildResponse(_msgUtil.getMessage("business.create.success"),response, null);
