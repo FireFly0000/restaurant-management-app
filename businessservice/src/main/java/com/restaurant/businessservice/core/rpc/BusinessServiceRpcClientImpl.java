@@ -1,6 +1,7 @@
 package com.restaurant.businessservice.core.rpc;
 
 import com.google.protobuf.ByteString;
+import com.restaurant.commons.core.enums.FileCategory;
 import com.restaurant.commons.core.rpc.storage.*;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.rpc.RpcException;
@@ -11,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class BusinessServiceRpcClientImpl implements IBusinessServiceRpcClient {
@@ -20,16 +22,17 @@ public class BusinessServiceRpcClientImpl implements IBusinessServiceRpcClient {
     private StorageService _storageService;
 
     @Override
-    public String createFileOnCloud(MultipartFile file, String bucketName, String fileCategory) {
+    public String createFileOnCloud(MultipartFile file, FileCategory fileCategory, String bucketName, String entityId) {
         if (file == null) return null;
         try{
             _log.info("createFileOnCloud, Prering call gRPC to upload file");
             FileMetadata metadata = FileMetadata.newBuilder()
                     .setBucketName(bucketName)
+                    .setEntityId(entityId)
+                    .setFileCategory(fileCategory.name())
+                    .setContentLength(file.getSize())
                     .setFileName(file.getOriginalFilename())
                     .setFileType(file.getContentType())
-                    .setContentLength(file.getSize())
-                    .setObjectName(fileCategory + "/" + file.getOriginalFilename())
                     .build();
 
             UploadFileRequest request = UploadFileRequest.newBuilder()

@@ -34,10 +34,6 @@ public class Constant {
             Pair.of(String.format("%s/auth/sign-up", API_V1_PREFIX), HTTP_POST)
     );
 
-    /* File Category */
-    public static final String STORAGE_AVATAR = "avatar";
-    public static final String STORAGE_COVER_IMAGE = "cover-image";
-
     /* ERROR CODE */
     // 0xxx: SYSTEM / SERVER ERROR
     public static final String RES0001 = "RES0001"; // Internal Server Error
