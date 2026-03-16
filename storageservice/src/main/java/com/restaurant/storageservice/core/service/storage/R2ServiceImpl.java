@@ -144,7 +144,7 @@ public class R2ServiceImpl implements IStorageService {
 
     @Override
     public String getPublicCdnUrl(String argObjectKey) {
-        String url = this._properties.getCloudflare().getR2().getUrl();
+        String url = this._properties.getCloudflare().getR2().getObjectPublicUrl();
         String cdn = url.endsWith("/") ? url : url + "/";
         String key = argObjectKey.startsWith("/") ? argObjectKey.substring(1) : argObjectKey;
         return cdn + key;

@@ -1,6 +1,7 @@
 package com.restaurant.storageservice.core.kafka;
 
 import com.restaurant.commons.core.rpc.storage.DeleteFileEvent;
+import com.restaurant.commons.core.rpc.storage.PathFileSaved;
 import com.restaurant.storageservice.core.service.storage.IStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,7 @@ public class StorageEventHandler {
         this._storageService = storageService;
     }
 
-    @KafkaListener(topics = "storage.event.delete_file", containerFactory = "kafkaListenerContainerFactory", concurrency = "${app.notification.kafka.consumer.concurency}")
+    @KafkaListener(topics = "storage.event.delete_file", containerFactory = "kafkaListenerContainerFactory", concurrency = "${app.storage.kafka.consumer.concurency}")
     public void handleStorageDeleteFileEvent(@Payload List<DeleteFileEvent> events, @Header("X-Event-Id") List<String> eventIds, Acknowledgment ack){
         if(events == null || events.isEmpty()){
             ack.acknowledge();
@@ -34,9 +35,10 @@ public class StorageEventHandler {
         _log.info("handleStorageDeleteFileEvent, Prepare to delete {} files", events.size());
         try{
             Map<String, List<String>> fileByBucket = events.stream()
+                    .flatMap(event -> event.getFilesList().stream())
                     .collect(Collectors.groupingBy(
-                       DeleteFileEvent::getBucketName,
-                       Collectors.mapping(DeleteFileEvent::getObjectName, Collectors.toList())
+                       PathFileSaved::getBucketName,
+                       Collectors.mapping(PathFileSaved::getObjectKey, Collectors.toList())
                     ));
             List<CompletableFuture<Void>> futures = fileByBucket.entrySet().stream()
                     .map(entry -> CompletableFuture.runAsync(() -> {

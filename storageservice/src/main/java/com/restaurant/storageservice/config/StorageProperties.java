@@ -57,6 +57,7 @@ public class StorageProperties {
             private String url;
             private String publicBucket;
             private String privateBucket;
+            private String objectPublicUrl;
         }
     }
 }
