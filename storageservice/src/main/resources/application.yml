@@ -174,4 +174,5 @@ app:
         url: ${CLOUDFLARE_R2_URL}
         public-bucket: ${CLOUDFLARE_R2_PUBLIC_BUCKET}
         private-bucket: ${CLOUDFLARE_R2_PRIVATE_BUCKET}
+        object-public-url: ${CLOUDFLARE_R2_OBJECT_PUBLIC_URL}
 

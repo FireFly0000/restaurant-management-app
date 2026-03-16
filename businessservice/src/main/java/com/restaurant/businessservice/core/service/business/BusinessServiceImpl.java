@@ -4,7 +4,6 @@ import com.restaurant.businessservice.common.MsgUtil;
 import com.restaurant.businessservice.config.BusinessProperties;
 import com.restaurant.businessservice.core.context.RequestContext;
 import com.restaurant.businessservice.core.kafka.KafkaProducer;
-import com.restaurant.businessservice.core.kafka.KafkaProducerWrapper;
 import com.restaurant.businessservice.core.repository.IBusinessRepository;
 import com.restaurant.businessservice.core.rpc.IBusinessServiceRpcClient;
 import com.restaurant.businessservice.core.service.business.dto.CreateBusinessRequest;
@@ -12,13 +11,14 @@ import com.restaurant.businessservice.core.service.business.dto.UpdateBusinessRe
 import com.restaurant.businessservice.core.service.business.dto.UploadFileRequest;
 import com.restaurant.businessservice.model.Business;
 import com.restaurant.commons.constant.Constant;
-import com.restaurant.commons.constant.KafkaTopic;
 import com.restaurant.commons.core.UserContext;
 import com.restaurant.commons.core.enums.BusinessType;
 import com.restaurant.commons.core.enums.FileCategory;
-import com.restaurant.commons.core.rpc.storage.FileCleanUpEvent;
+import com.restaurant.commons.core.rpc.storage.DeleteFileEvent;
+import com.restaurant.commons.core.rpc.storage.PathFileSaved;
 import com.restaurant.commons.exception.AppException;
 import com.restaurant.commons.utils.AppUtils;
+import com.restaurant.commons.utils.FileUtils;
 import com.restaurant.commons.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -272,15 +272,32 @@ public class BusinessServiceImpl implements IBusinessService {
         return this._repo.saveAll(entities);
     }
 
-    private void fileCleanUp(String key, String... urls){
+    private void fileCleanUp(String key, String bucketName, String... urls){
         if(urls == null || urls.length == 0) return;
 
         List<String> validUrls = Arrays.stream(urls).filter(StringUtils::hasText).toList();
-        if(!validUrls.isEmpty()){
-            FileCleanUpEvent event = FileCleanUpEvent.newBuilder()
-                    .addAllUrls(validUrls)
+        if (validUrls.isEmpty()) return;
+
+        List<PathFileSaved> filesToClean = validUrls.stream()
+                .map(url -> {
+                    String objectKey = FileUtils.extractObjectKeyR2FromUrl(url);
+
+                    if (objectKey == null) return null;
+
+                    return PathFileSaved.newBuilder()
+                            .setBucketName(bucketName)
+                            .setObjectKey(objectKey)
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .toList();
+        if (!filesToClean.isEmpty()) {
+            DeleteFileEvent event = DeleteFileEvent.newBuilder()
+                    .addAllFiles(filesToClean)
                     .build();
+
             _kafka.pushStorageFileCleanUpEvent(key, event, new HashMap<>());
+            _log.info("fileCleanUp, Đã bắn event xóa {} files rác lên Kafka", filesToClean.size());
         }
     }
 }

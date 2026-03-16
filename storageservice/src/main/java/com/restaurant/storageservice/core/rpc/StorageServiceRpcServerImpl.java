@@ -1,6 +1,7 @@
 package com.restaurant.storageservice.core.rpc;
 
 import com.restaurant.commons.core.rpc.storage.*;
+import com.restaurant.commons.utils.FileUtils;
 import com.restaurant.storageservice.core.service.storage.IStorageService;
 import com.restaurant.storageservice.core.service.storage.dto.UploadLargeFileDto;
 import com.restaurant.storageservice.core.service.storage.dto.UploadSmallFileDto;
@@ -32,11 +33,13 @@ public class StorageServiceRpcServerImpl extends DubboStorageServiceTriple.Stora
     public UploadFileResponse uploadFile(UploadFileRequest request){
         FileMetadata fileMetadata = request.getMedatadata();
         byte[] file = request.getFileData().toByteArray();
+
+
         UploadSmallFileDto smallFile = UploadSmallFileDto.builder()
                 .bucketName(fileMetadata.getBucketName())
-                .objectKey(fileMetadata.getObjectName())
+                .objectKey(FileUtils.generateObjectKey(fileMetadata))
                 .contentLength(fileMetadata.getContentLength())
-                .contentType(fileMetadata.getMimeType())
+                .contentType(fileMetadata.getFileType())
                 .file(file)
                 .build();
 
@@ -99,9 +102,9 @@ public class StorageServiceRpcServerImpl extends DubboStorageServiceTriple.Stora
                         UploadLargeFileDto largeFile = UploadLargeFileDto.builder()
                                 .stream(inputStream)
                                 .bucketName(fileMetadata.getBucketName())
-                                .objectKey(fileMetadata.getObjectName())
+                                .objectKey(FileUtils.generateObjectKey(fileMetadata))
                                 .contentLength(fileMetadata.getContentLength())
-                                .contentType(fileMetadata.getMimeType())
+                                .contentType(fileMetadata.getFileType())
                                 .build();
                         String cdnUrl = _storageService.uploadStream(largeFile);
                         if(cdnUrl == null){

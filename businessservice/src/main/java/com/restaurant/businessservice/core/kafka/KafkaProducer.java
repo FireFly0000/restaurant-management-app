@@ -2,7 +2,7 @@ package com.restaurant.businessservice.core.kafka;
 
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.constant.KafkaTopic;
-import com.restaurant.commons.core.rpc.storage.FileCleanUpEvent;
+import com.restaurant.commons.core.rpc.storage.DeleteFileEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,7 @@ public class KafkaProducer {
         _producer = producer;
     }
 
-    public void pushStorageFileCleanUpEvent(String key, FileCleanUpEvent event, Map<String, String> headers){
+    public void pushStorageFileCleanUpEvent(String key, DeleteFileEvent event, Map<String, String> headers){
         // Add EventID if it is not present.
         headers.putIfAbsent(Constant.H_EVENT_ID, UUID.randomUUID().toString());
         _log.info("pushStorageFileCleanUpEvent, EventId: {}", headers.get(Constant.H_EVENT_ID));
