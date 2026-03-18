@@ -1,8 +1,10 @@
 package com.restaurant.businessservice.core.service.business.dto;
 
+import com.restaurant.businessservice.core.service.location.dto.BusinessLocationResponse;
 import lombok.Builder;
 
 import java.util.Date;
+import java.util.Set;
 
 @Builder
 public class BusinessResponse {
@@ -16,7 +18,10 @@ public class BusinessResponse {
     private String email;
     private String websiteUrl;
     private Boolean isActive;
-    private Integer locationCount;
+    private Integer locationsCount;
+    private Integer ordersCount;
+    private Double averageRating;
+    private Set<BusinessLocationResponse> locations;
     private Date createdAt;
     private Date updatedAt;
 }
