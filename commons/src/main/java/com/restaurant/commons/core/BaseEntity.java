@@ -1,5 +1,6 @@
 package com.restaurant.commons.core;
 
+import lombok.Builder;
 import lombok.Data;
 import jakarta.persistence.MappedSuperclass;
 import lombok.NoArgsConstructor;
@@ -14,5 +15,6 @@ import java.util.Date;
 public class BaseEntity {
     protected Date createdAt;
     protected Date updatedAt;
-    protected Boolean isDeleted;
+    @Builder.Default
+    protected Long deletedAt = 0L;
 }

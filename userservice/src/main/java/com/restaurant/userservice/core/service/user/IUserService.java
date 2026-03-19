@@ -21,4 +21,5 @@ public interface IUserService {
     User save(User entity);
     List<User> getActivedUser(int page, int size, String sort, String sortDirection);
     List<User> getAllUser(int page, int size, String sort, String sortDirection);
+    List<User> getUsersByIds(List<UUID> ids);
 }

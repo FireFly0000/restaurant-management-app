@@ -18,7 +18,6 @@ import java.util.UUID;
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
 @NoArgsConstructor
-@SQLRestriction("is_deleted = false")
 public class Business extends BaseEntity {
     @Id
     @UuidGenerator(style = UuidGenerator.Style.TIME)
@@ -34,8 +33,15 @@ public class Business extends BaseEntity {
     private String websiteUrl;
     private String phoneNumber;
     private String email;
-    private Boolean isActive;
+    @Builder.Default
+    private Boolean isActive = false;
     private BusinessType businessType;
+    @Builder.Default
+    private Integer locationsCount = 0;
+    @Builder.Default
+    private Integer ordersCount = 0;
+    @Builder.Default
+    private Double averageRating = 0.0;
 
     @Version
     private Integer version;
@@ -44,7 +50,14 @@ public class Business extends BaseEntity {
     public void prePersist() {
         this.createdAt = new Date();
         this.updatedAt = new Date();
-        this.isDeleted = false;
         this.isActive = false;
+        if(this.deletedAt == null){
+            this.deletedAt = 0L;
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = new Date();
     }
 }

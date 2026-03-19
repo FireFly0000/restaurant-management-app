@@ -3,16 +3,22 @@ package com.restaurant.businessservice.core.rpc;
 import com.google.protobuf.ByteString;
 import com.restaurant.commons.core.enums.FileCategory;
 import com.restaurant.commons.core.rpc.storage.*;
+import com.restaurant.commons.core.rpc.user.GetUsersByIdsRequest;
+import com.restaurant.commons.core.rpc.user.GetUsersByIdsResponse;
+import com.restaurant.commons.core.rpc.user.UserService;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.dubbo.rpc.RpcException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class BusinessServiceRpcClientImpl implements IBusinessServiceRpcClient {
@@ -20,6 +26,9 @@ public class BusinessServiceRpcClientImpl implements IBusinessServiceRpcClient {
 
     @DubboReference
     private StorageService _storageService;
+
+    @DubboReference
+    private UserService _userService;
 
     @Override
     public String createFileOnCloud(MultipartFile file, FileCategory fileCategory, String bucketName, String entityId) {
@@ -55,5 +64,21 @@ public class BusinessServiceRpcClientImpl implements IBusinessServiceRpcClient {
     @Override
     public List<String> createFilesOnCloud(List<MultipartFile> files) {
         return null;
+    }
+
+    @Override
+    public GetUsersByIdsResponse getUsersByIds(List<UUID> ids) {
+        if(CollectionUtils.isEmpty(ids)) return null;
+        try{
+            List<String> stringIds = ids.stream().map(UUID::toString).toList();
+            GetUsersByIdsRequest request = GetUsersByIdsRequest.newBuilder()
+                    .addAllIds(stringIds)
+                    .build();
+
+            return _userService.getUsersByIds(request);
+        }catch (Exception e){
+            _log.error("getUsersByIds, Error during get users ids: {}",e.getMessage());
+            return null;
+        }
     }
 }
