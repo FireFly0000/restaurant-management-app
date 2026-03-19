@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 
 @Service
-@KafkaListener(topics = "user.event", containerFactory = "kafkaListenerContainerFactory", concurrency = "${app.notification.kafka.consumer.concurency}")
 public class UserEventHandler {
     private static final Logger _log = LoggerFactory.getLogger(UserEventHandler.class);
 
@@ -38,7 +37,7 @@ public class UserEventHandler {
         this._notificationService = _notificationService;
     }
 
-    @KafkaListener(topics = "user.event", containerFactory = "kafkaListenerContainerFactory", concurrency = "${app.notification.kafka.consumer.concurency}")
+    @KafkaListener(topics = "user.created.event", containerFactory = "kafkaListenerContainerFactory", concurrency = "${app.notification.kafka.consumer.concurency}")
     public void handleUserCreatedEvent(@Payload List<SendEmailEvent> events, @Header("X-Event-Id") List<String> eventIds, Acknowledgment ack){
         _log.info("handleUserCreatedEvent, Prepare to send {} email", events.size());
         try {
@@ -94,10 +93,5 @@ public class UserEventHandler {
 
             throw new RuntimeException("handleUserCreatedEvent");
         }
-    }
-
-    @KafkaHandler
-    public void handleUnknown(@Payload List<Object> objects){
-        _log.debug("handleUnknown, Unknown message: {}", objects.size());
     }
 }
