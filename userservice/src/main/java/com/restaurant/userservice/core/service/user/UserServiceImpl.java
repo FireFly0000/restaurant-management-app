@@ -6,9 +6,13 @@ import com.restaurant.userservice.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements IUserService {
@@ -91,5 +95,13 @@ public class UserServiceImpl implements IUserService {
     @Override
     public List<User> getAllUser(int page, int size, String sort, String sortDirection) {
         return List.of();
+    }
+
+    @Override
+    public List<User> getUsersByIds(List<UUID> ids) {
+        if(CollectionUtils.isEmpty(ids)){
+            return new ArrayList<>();
+        }
+        return _repo.getUsersByIds(ids);
     }
 }

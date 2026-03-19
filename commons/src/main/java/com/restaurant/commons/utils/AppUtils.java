@@ -1,6 +1,8 @@
 package com.restaurant.commons.utils;
 
 import com.restaurant.commons.core.dtos.ApiResponse;
+import com.restaurant.commons.core.dtos.Pagination;
+import com.restaurant.commons.core.dtos.PaginationResponse;
 
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
@@ -12,6 +14,16 @@ public class AppUtils {
                 .data(data)
                 .extra(extra)
                 .timestamp(new Date())
+                .build();
+    }
+
+    public static ApiResponse buildResponse(String msg, Object data , Object extra, Pagination pagination){
+        return PaginationResponse.builder()
+                .message(msg)
+                .data(data)
+                .extra(extra)
+                .timestamp(new Date())
+                .pagination(pagination)
                 .build();
     }
 

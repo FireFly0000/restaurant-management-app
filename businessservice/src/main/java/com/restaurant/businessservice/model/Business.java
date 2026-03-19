@@ -33,11 +33,15 @@ public class Business extends BaseEntity {
     private String websiteUrl;
     private String phoneNumber;
     private String email;
-    private Boolean isActive;
+    @Builder.Default
+    private Boolean isActive = false;
     private BusinessType businessType;
-    private Integer locationsCount;
-    private Integer ordersCount;
-    private Double averageRating = 5.0;
+    @Builder.Default
+    private Integer locationsCount = 0;
+    @Builder.Default
+    private Integer ordersCount = 0;
+    @Builder.Default
+    private Double averageRating = 0.0;
 
     @Version
     private Integer version;

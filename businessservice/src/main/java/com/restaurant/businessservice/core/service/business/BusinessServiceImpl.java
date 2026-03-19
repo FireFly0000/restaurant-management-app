@@ -1,32 +1,44 @@
 package com.restaurant.businessservice.core.service.business;
 
+import com.restaurant.businessservice.common.MapperUtils;
 import com.restaurant.businessservice.common.MsgUtil;
 import com.restaurant.businessservice.config.BusinessProperties;
+import com.restaurant.businessservice.constant.BusinessServiceConstant;
 import com.restaurant.businessservice.core.context.RequestContext;
 import com.restaurant.businessservice.core.kafka.KafkaProducer;
 import com.restaurant.businessservice.core.repository.IBusinessRepository;
 import com.restaurant.businessservice.core.rpc.IBusinessServiceRpcClient;
-import com.restaurant.businessservice.core.service.business.dto.CreateBusinessRequest;
-import com.restaurant.businessservice.core.service.business.dto.UpdateBusinessRequest;
-import com.restaurant.businessservice.core.service.business.dto.UploadFileRequest;
+import com.restaurant.businessservice.core.service.business.dto.*;
+import com.restaurant.businessservice.core.service.location.IBusinessLocationService;
+import com.restaurant.businessservice.core.service.location.dto.BusinessLocationResponse;
+import com.restaurant.businessservice.core.specification.BusinessSpecification;
 import com.restaurant.businessservice.model.Business;
+import com.restaurant.businessservice.model.Location;
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.core.UserContext;
 import com.restaurant.commons.core.enums.BusinessType;
 import com.restaurant.commons.core.enums.FileCategory;
 import com.restaurant.commons.core.rpc.storage.DeleteFileEvent;
 import com.restaurant.commons.core.rpc.storage.PathFileSaved;
+import com.restaurant.commons.core.rpc.user.GetUsersByIdsResponse;
+import com.restaurant.commons.core.rpc.user.UserRpcResponse;
 import com.restaurant.commons.exception.AppException;
 import com.restaurant.commons.utils.AppUtils;
 import com.restaurant.commons.utils.FileUtils;
 import com.restaurant.commons.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 public class BusinessServiceImpl implements IBusinessService {
@@ -36,19 +48,22 @@ public class BusinessServiceImpl implements IBusinessService {
     private final MsgUtil _msgUtil;
     private final KafkaProducer _kafka;
     private final BusinessProperties _properties;
+    private final IBusinessLocationService _businessLocationService;
 
     public BusinessServiceImpl(
             IBusinessRepository _repo,
             MsgUtil _msgUtil,
             IBusinessServiceRpcClient _businessRpcClient,
             KafkaProducer _kafka,
-            BusinessProperties _properties
+            BusinessProperties _properties,
+            IBusinessLocationService _businessLocationService
     ) {
         this._repo = _repo;
         this._msgUtil = _msgUtil;
         this._businessRpcClient = _businessRpcClient;
         this._kafka = _kafka;
         this._properties = _properties;
+        this._businessLocationService = _businessLocationService;
     }
 
     @Override
@@ -260,6 +275,48 @@ public class BusinessServiceImpl implements IBusinessService {
             }
             throw new AppException(_msgUtil.getMessage("business.upload_avatar.fail"), Constant.RES3005,"400");
         }
+    }
+
+    @Override
+    public Page<Business> getListBusinesses(BusinessFilter filter) {
+        _log.info("getListBusinesses, Start list businesses with business filter = {}", filter);
+        Specification<Business> spec = BusinessSpecification.filter(filter);
+        Pageable pageable = PageRequest.of(filter.getPage(), filter.getLimit(), Sort.Direction.fromString(filter.getSort()), filter.getSortBy());
+        return this._repo.findAll(spec, pageable);
+    }
+
+    @Override
+    public BusinessResponse getBusinessById(UUID id) {
+        _log.info("getBusinessById, Start get business with id = {}", id);
+        Business business = this.getByIdAndThrow(id);
+        List<Location> locations = this._businessLocationService.getBusinessLocationsByBusinessId(business.getId());
+
+        List<UUID> managerIds = locations.stream()
+                .map(Location::getManagerId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        // Call gRPC to User Service to get list Managers of locations
+        GetUsersByIdsResponse userResponse = _businessRpcClient.getUsersByIds(managerIds);
+        if(userResponse == null){
+            // Logged from _businessRpcClient.getUsersByIds
+            throw new AppException(_msgUtil.getMessage("business.get_business.fail"), Constant.RES0007,"400");
+        }
+        Map<String, UserRpcResponse> mapUserResponse = userResponse.getUsersList()
+                .stream().collect(Collectors.toMap(UserRpcResponse::getId, user -> user));
+
+        List<BusinessLocationResponse> locationResponses = locations.stream().map(l -> {
+            Map<String, Object> extraData = new HashMap<>();
+            extraData.put(BusinessServiceConstant.EXT_USERS, mapUserResponse.getOrDefault(l.getManagerId().toString(), null));
+
+            return MapperUtils.getLocationResponse(l, extraData);
+        }).toList();
+
+        Map<String, Object> extraData = new HashMap<>();
+        extraData.putIfAbsent(BusinessServiceConstant.EXT_BUSINESS_LOCATION, locationResponses);
+
+        return MapperUtils.getBusinessResponse(business, extraData);
     }
 
     @Override

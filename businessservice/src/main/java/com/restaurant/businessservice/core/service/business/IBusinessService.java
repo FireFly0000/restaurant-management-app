@@ -1,10 +1,8 @@
 package com.restaurant.businessservice.core.service.business;
 
-import com.restaurant.businessservice.core.service.business.dto.BusinessResponse;
-import com.restaurant.businessservice.core.service.business.dto.CreateBusinessRequest;
-import com.restaurant.businessservice.core.service.business.dto.UpdateBusinessRequest;
-import com.restaurant.businessservice.core.service.business.dto.UploadFileRequest;
+import com.restaurant.businessservice.core.service.business.dto.*;
 import com.restaurant.businessservice.model.Business;
+import org.springframework.data.domain.Page;
 
 import java.util.Collection;
 import java.util.List;
@@ -24,7 +22,7 @@ public interface IBusinessService {
     String updateCoverImage(UUID id, UploadFileRequest request);
     String updateAvatar(UUID id, UploadFileRequest request);
 
-    BusinessResponse getListBusinesses();
+    Page<Business> getListBusinesses(BusinessFilter filter);
     BusinessResponse getBusinessById(UUID id);
 
     Business save(Business entity);

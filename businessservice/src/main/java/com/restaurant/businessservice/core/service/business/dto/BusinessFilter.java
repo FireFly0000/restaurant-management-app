@@ -13,4 +13,5 @@ import lombok.experimental.SuperBuilder;
 public class BusinessFilter extends BaseFilter {
     private Boolean isActived;
     private Boolean isDeleted;
+    private String type;
 }
