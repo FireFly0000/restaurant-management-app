@@ -48,7 +48,7 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
         return response.getExists();
     }
 
-    public boolean createUser(
+    public CreateUserResponse createUser(
             String email,
             String hashedPassword,
             String phoneNumber,
@@ -66,7 +66,6 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
                 .setAvatarUrl(avatarUrl != null ? avatarUrl : "")
                 .build();
 
-        CreateUserResponse response = userServiceStub.createUser(request);
-        return response.getSuccess();
+        return userServiceStub.createUser(request);
     }
 }
