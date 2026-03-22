@@ -3,10 +3,8 @@ package com.restaurant.authservice.core.kafka;
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.constant.KafkaTopic;
 import com.restaurant.commons.core.rpc.notification.SendEmailEvent;
-import com.restaurant.commons.core.rpc.storage.DeleteFileEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;

@@ -5,6 +5,7 @@ import com.google.protobuf.Value;
 import com.restaurant.authservice.core.kafka.KafkaProducer;
 import com.restaurant.authservice.core.rpc.IUserServiceRpcClient;
 import com.restaurant.authservice.core.service.auth.dto.*;
+import com.restaurant.authservice.core.service.jwt.IJwtService;
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.core.enums.NotiType;
 import com.restaurant.commons.core.rpc.notification.SendEmailEvent;
@@ -26,15 +27,18 @@ public class AuthServiceImpl implements IAuthService {
     private final IUserServiceRpcClient _userServiceRpcClient;
     private final Logger _log = LoggerFactory.getLogger(AuthServiceImpl.class);
     private final PasswordEncoder _passwordEncoder;
+    private final IJwtService _jwtService;
     private final KafkaProducer _authEventProducer;
 
     public AuthServiceImpl(
             IUserServiceRpcClient userServiceRpcClient,
             PasswordEncoder passwordEncoder,
-            KafkaProducer authEventProducer
+            KafkaProducer authEventProducer,
+            IJwtService jwtService
     ){
         this._userServiceRpcClient = userServiceRpcClient;
         this._passwordEncoder = passwordEncoder;
+        this._jwtService = jwtService;
         this._authEventProducer = authEventProducer;
     }
 
@@ -83,11 +87,24 @@ public class AuthServiceImpl implements IAuthService {
             }
             _log.info("Registration successful for email: {}", request.getEmail());
 
+            //Build verify token
+            Map<String, Object> claims = new HashMap<>();
+            claims.put("email", request.getEmail());
+            claims.put("firstName", request.getFirstName());
+            claims.put("lastName", request.getLastName());
+            claims.put("type", "VERIFY_EMAIL");
+
+            String verifyToken = _jwtService.generateVerifyAccountToken(
+                    createdUser.getId(), claims
+            );
+
+            String verifyUrl = "http://localhost:8081/verify?token=" + verifyToken;
+
             // Build metadata map
             Map<String, Value> metadataFields = new HashMap<>();
             metadataFields.put("firstName", Value.newBuilder().setStringValue(request.getFirstName()).build());
             metadataFields.put("lastName",  Value.newBuilder().setStringValue(request.getLastName()).build());
-            metadataFields.put("verifyUrl", Value.newBuilder().setStringValue("https://yourapp.com/verify?token=").build());
+            metadataFields.put("verifyUrl", Value.newBuilder().setStringValue(verifyUrl).build());
 
             Struct metadata = Struct.newBuilder()
                     .putAllFields(metadataFields)

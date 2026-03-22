@@ -19,7 +19,7 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
             retries = 2,
             check = false
     )
-    private UserService userServiceStub;  //
+    private UserService userServiceStub;
     private final Logger _log = LoggerFactory.getLogger(UserServiceRpcClientImpl.class);
 
     /**

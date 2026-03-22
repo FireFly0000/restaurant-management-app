@@ -215,3 +215,9 @@ app:
     cache:
       ttl-seconds: 3600
       prefix: "auth:"
+    #jwt settings
+    jwt:
+      secret: ${JWT_SECRET}
+      access-token-expiration: ${JWT_ACCESS_EXPIRATION}  # 1 hour in milliseconds
+      refresh-token-expiration: ${JWT_REFRESH_EXPIRATION}  # 7 days in milliseconds
+      verify-account-token-expiration: ${JWT_VERIFY_EXPIRATION} # 15 mins in milliseconds
