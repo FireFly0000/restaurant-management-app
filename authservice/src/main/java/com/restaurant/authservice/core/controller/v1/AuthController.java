@@ -1,18 +1,17 @@
 package com.restaurant.authservice.core.controller.v1;
 
 import com.restaurant.authservice.core.service.auth.IAuthService;
-import com.restaurant.authservice.core.service.auth.dto.RegisterRequest;
+import com.restaurant.authservice.core.service.auth.dto.*;
 import com.restaurant.authservice.utils.Utils;
+import com.restaurant.commons.constant.Constant;
+import com.restaurant.commons.exception.AppException;
 import com.restaurant.commons.utils.AppUtils;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -27,11 +26,11 @@ public class AuthController {
     }
 
     @PostMapping("/sign-up")
-    public ResponseEntity<?> signUp(@RequestBody @Valid RegisterRequest request) {
+    public ResponseEntity<?> signUp(@RequestBody @Valid SignupRequest request) {
         _log.info("signUp, Signup for user with email: {}", request.getEmail());
 
         String successMsg = Utils.getMessage("user.created.true");
-        Boolean result = _authService.signUp(request);
+        SignupResponse result = _authService.signUp(request);
 
         return new ResponseEntity<>
                 (
@@ -42,5 +41,39 @@ public class AuthController {
                     ),
                     HttpStatus.CREATED
                 );
+    }
+
+    @PostMapping("/sign-in")
+    public ResponseEntity<?> signIn(@RequestBody @Valid LoginRequest request) {
+        _log.info("signIn, Sign in for user with email: {}", request.getEmail());
+
+        String successMsg = Utils.getMessage("auth.signin.success");
+        AuthResponse result = _authService.signIn(request);
+
+        return new ResponseEntity<>(
+                AppUtils.buildResponse(successMsg, result, null),
+                HttpStatus.OK
+        );
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(
+            @RequestHeader("X-Refresh-Token") String refreshToken
+    ) {
+        _log.info("refreshToken, request received");
+
+        if (refreshToken == null) {
+            throw new AppException(
+                    "auth.refresh.token_missing",
+                    Constant.RES3008,
+                    HttpStatus.UNAUTHORIZED.name()
+            );
+        }
+
+        AuthResponse result = _authService.refreshToken(refreshToken);
+        return new ResponseEntity<>(
+                AppUtils.buildResponse(Utils.getMessage("auth.refresh.success"), result, null),
+                HttpStatus.OK
+        );
     }
 }

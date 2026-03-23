@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @PasswordMatch(password = "password", confirmPassword = "confirmPassword")
-public class RegisterRequest {
+public class SignupRequest {
 
     @NotBlank(message = "{auth.signup.email.required}")
     @Email(message = "{auth.signup.email.invalid}")

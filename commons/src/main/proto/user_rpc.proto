@@ -7,10 +7,14 @@ option java_outer_classname = "UserServiceRpc";
 
 service UserService{
     //Existence checks
-    rpc existsByPhoneNumber(ExistsByPhoneNumberRequest) returns (ExistsResponse);
-    rpc existsByEmail(ExistsByEmailRequest) returns (ExistsResponse);
-    rpc createUser(CreateUserRequest) returns (CreateUserResponse);
+    rpc ExistsByPhoneNumber(ExistsByPhoneNumberRequest) returns (ExistsResponse);
+    rpc ExistsByEmail(ExistsByEmailRequest) returns (ExistsResponse);
+    rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
     rpc getUsersByIds(GetUsersByIdsRequest) returns (GetUsersByIdsResponse);
+
+    // Lookup
+    rpc FindByEmail(FindByEmailRequest) returns (FoundUserResponse);
+    rpc FindById(FindByIdRequest) returns (FoundUserResponse);
 }
 
 //Request messages
@@ -31,6 +35,14 @@ message CreateUserRequest {
     string avatar_url = 6;
 }
 
+message FindByEmailRequest {
+    string email = 1;
+}
+
+message FindByIdRequest {
+    string id = 1;
+}
+
 //Response messages
 message ExistsResponse {
     bool exists = 1;
@@ -38,8 +50,26 @@ message ExistsResponse {
 
 message CreateUserResponse {
     string id = 1;
-    bool success = 2;
-    string message = 3;
+    string email = 2;
+    string first_name = 3;
+    string last_name = 4;
+    string phone_number = 5;
+    bool success = 6;
+    string message = 7;
+}
+
+message FoundUserResponse {
+    string id = 1;
+    string email = 2;
+    string password = 3;
+    string first_name = 4;
+    string last_name = 5;
+    string avatar_url = 6;
+    string user_type = 7;
+    bool is_active = 8;
+    bool is_verified = 9;
+    bool is_deleted = 10;
+    bool found = 11;
 }
 
 message GetUsersByIdsRequest {

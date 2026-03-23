@@ -28,7 +28,7 @@ public class User extends BaseEntity {
     private String email;
     @Column(nullable = false)
     private String password;
-    private LocalDateTime birhtDate;
+    private LocalDateTime birthDate;
     @Column(unique = true, nullable = false)
     private String phoneNumber;
     private String firstName;
@@ -36,6 +36,7 @@ public class User extends BaseEntity {
     private String avatarUrl;
     private Boolean isActive;
     private Boolean isVerified;
+    private Boolean isDeleted;
 
     @PrePersist
     private void prePersist(){

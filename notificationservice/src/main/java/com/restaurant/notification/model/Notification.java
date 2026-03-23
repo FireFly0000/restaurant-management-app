@@ -6,6 +6,7 @@ import com.restaurant.commons.core.enums.NotiStatus;
 import com.restaurant.commons.core.enums.NotiType;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
@@ -13,12 +14,11 @@ import java.util.Date;
 import java.util.UUID;
 
 @Table(name = "notifications")
-@Data
 @Entity
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
+@Data
 @EqualsAndHashCode(callSuper = true)
+@SuperBuilder
+@NoArgsConstructor
 public class Notification extends BaseEntity {
     @Id
     @UuidGenerator(style = UuidGenerator.Style.TIME)

@@ -31,7 +31,8 @@ public class Constant {
     /* PUBLIC API */
     public static final List<Pair<String, String>> PUBLIC_ENDPOINT = List.of(
             Pair.of(String.format("%s/auth/sign-in", API_V1_PREFIX), HTTP_POST),
-            Pair.of(String.format("%s/auth/sign-up", API_V1_PREFIX), HTTP_POST)
+            Pair.of(String.format("%s/auth/sign-up", API_V1_PREFIX), HTTP_POST),
+            Pair.of(String.format("%s/auth/refresh-token", API_V1_PREFIX), HTTP_POST)
     );
 
     /* ERROR CODE */
@@ -67,7 +68,8 @@ public class Constant {
     public static final String RES3008 = "RES3008"; // Failed Creating new user
     public static final String RES3009 = "RES3009"; // Resource couldn't be saved.
     public static final String RES3010 = "RES3010"; // Resource couldn't be deleted.
+    // public static final String RES3007 = "RES3007"; // Forbidden user
+    // public static final String RES3008 = "RES3008"; // Unauthorized user
 
     /* TASK */
-
 }
