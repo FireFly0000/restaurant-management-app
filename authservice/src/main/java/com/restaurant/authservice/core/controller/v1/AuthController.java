@@ -4,15 +4,14 @@ import com.restaurant.authservice.core.service.auth.IAuthService;
 import com.restaurant.authservice.core.service.auth.dto.RegisterRequest;
 import com.restaurant.authservice.utils.Utils;
 import com.restaurant.commons.utils.AppUtils;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -43,4 +42,25 @@ public class AuthController {
                     HttpStatus.CREATED
                 );
     }
+
+/*    @GetMapping("/verify")
+    public ResponseEntity<?> verify(@RequestParam String token) {
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+
+        String userId = claims.getSubject();
+        String type = claims.get("type", String.class);
+
+        if (!"VERIFY_EMAIL".equals(type)) {
+            throw new AppException("Invalid token type");
+        }
+
+        // mark user as verified
+        userService.verifyUser(userId);
+
+        return ResponseEntity.ok("Email verified successfully");
+    }*/
 }
