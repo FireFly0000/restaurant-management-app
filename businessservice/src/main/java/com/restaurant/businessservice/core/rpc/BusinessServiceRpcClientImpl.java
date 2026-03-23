@@ -27,7 +27,14 @@ public class BusinessServiceRpcClientImpl implements IBusinessServiceRpcClient {
     @DubboReference
     private StorageService _storageService;
 
-    @DubboReference
+    @DubboReference(
+            version = "1.0.0",
+            group = "user-service",
+            protocol = "tri",
+            timeout = 3000,
+            retries = 2,
+            check = false
+    )
     private UserService _userService;
 
     @Override
@@ -68,7 +75,12 @@ public class BusinessServiceRpcClientImpl implements IBusinessServiceRpcClient {
 
     @Override
     public GetUsersByIdsResponse getUsersByIds(List<UUID> ids) {
-        if(CollectionUtils.isEmpty(ids)) return null;
+        if(CollectionUtils.isEmpty(ids)){
+            return GetUsersByIdsResponse.newBuilder()
+                    .addAllUsers(new ArrayList<>())
+                    .build();
+        }
+
         try{
             List<String> stringIds = ids.stream().map(UUID::toString).toList();
             GetUsersByIdsRequest request = GetUsersByIdsRequest.newBuilder()

@@ -36,6 +36,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -79,7 +80,7 @@ public class BusinessServiceImpl implements IBusinessService {
 
     @Override
     public Business getById(UUID id) {
-        Optional<Business> obj = _repo.getByIdActiveTrueAndDeleteFalse(id);
+        Optional<Business> obj = _repo.getByIdAndNotDeleted(id);
         if (obj.isPresent()) {
             _log.debug("findById, Business found with id = {}", id);
             return obj.get();
@@ -90,7 +91,7 @@ public class BusinessServiceImpl implements IBusinessService {
 
     @Override
     public Business getByIdAndThrow(UUID id) {
-        Optional<Business> obj = _repo.getByIdActiveTrueAndDeleteFalse(id);
+        Optional<Business> obj = _repo.getByIdAndNotDeleted(id);
         if (obj.isPresent()) {
             _log.debug("findById, Business found with id = {}", id);
             return obj.get();
@@ -214,6 +215,20 @@ public class BusinessServiceImpl implements IBusinessService {
         this.save(business);
 
         _log.info("active, Business inactivated with id = {}", id);
+        return true;
+    }
+
+    @Override
+    public Boolean delete(UUID id) {
+        _log.info("delete, Start deleting Business with id = {}", id);
+        Business business = this.getByIdAndThrow(id);
+        if (business.getIsActive()) {
+            _log.warn("delete, Cannot delete because business is active");
+            throw new AppException(_msgUtil.getMessage("business.delete.fail"), Constant.RES3010,"400");
+        }
+        business.setDeletedAt(System.currentTimeMillis());
+
+        this.save(business);
         return true;
     }
 

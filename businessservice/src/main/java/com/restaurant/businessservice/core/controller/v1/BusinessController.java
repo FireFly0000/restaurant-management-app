@@ -145,4 +145,20 @@ public class BusinessController {
         ApiResponse apiResponse = AppUtils.buildResponse(_msgUtil.getMessage("business.success"),response, null, pagination);
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
+
+    @GetMapping(value = "/{id}", produces = "application/json")
+    @PreAuthorize("@_authorizer.isLogedIn()")
+    public ResponseEntity<?> getBusinessById(@PathVariable("id") String id){
+        BusinessResponse response = this._businessService.getBusinessById(UUID.fromString(id));
+        ApiResponse apiResponse = AppUtils.buildResponse(_msgUtil.getMessage("business.success"),response, null);
+        return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+    }
+
+    @DeleteMapping(value = "/{id}", produces = "application/json")
+    @PreAuthorize("@_authorizer.isOwner(#id, T(com.restaurant.commons.constant.Entity).BUSINESS)")
+    public ResponseEntity<?> deleteBusinessByDi(@PathVariable("id") String id){
+        Boolean response = this._businessService.delete(UUID.fromString(id));
+        ApiResponse apiResponse = AppUtils.buildResponse(_msgUtil.getMessage("business.delete.success"),response, null);
+        return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+    }
 }
