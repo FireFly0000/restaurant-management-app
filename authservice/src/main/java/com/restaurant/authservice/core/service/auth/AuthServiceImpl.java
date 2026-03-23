@@ -1,7 +1,5 @@
 package com.restaurant.authservice.core.service.auth;
 
-import com.google.protobuf.Struct;
-import com.google.protobuf.Value;
 import com.restaurant.authservice.core.kafka.KafkaProducer;
 import com.restaurant.authservice.core.rpc.IUserServiceRpcClient;
 import com.restaurant.authservice.core.service.auth.dto.*;
@@ -10,9 +8,6 @@ import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.core.rpc.user.CreateUserRequest;
 import com.restaurant.commons.core.rpc.user.CreateUserResponse;
 import com.restaurant.commons.core.rpc.user.FoundUserResponse;
-import com.restaurant.commons.core.enums.NotiType;
-import com.restaurant.commons.core.rpc.notification.SendEmailEvent;
-import com.restaurant.commons.core.rpc.user.CreateUserResponse;
 import com.restaurant.commons.exception.AppException;
 import org.apache.dubbo.rpc.RpcException;
 import org.slf4j.Logger;
@@ -31,20 +26,16 @@ public class AuthServiceImpl implements IAuthService {
     private final Logger _log = LoggerFactory.getLogger(AuthServiceImpl.class);
     private final PasswordEncoder _passwordEncoder;
     private final IJwtService _jwtService;
-    private final IJwtService _jwtService;
     private final KafkaProducer _authEventProducer;
 
     public AuthServiceImpl(
             IUserServiceRpcClient userServiceRpcClient,
-            PasswordEncoder passwordEncoder,
-            IJwtService jwtService
             PasswordEncoder passwordEncoder,
             KafkaProducer authEventProducer,
             IJwtService jwtService
     ){
         this._userServiceRpcClient = userServiceRpcClient;
         this._passwordEncoder = passwordEncoder;
-        this._jwtService = jwtService;
         this._jwtService = jwtService;
         this._authEventProducer = authEventProducer;
     }
