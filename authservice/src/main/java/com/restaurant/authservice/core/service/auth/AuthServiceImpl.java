@@ -5,11 +5,13 @@ import com.google.protobuf.Value;
 import com.restaurant.authservice.core.kafka.KafkaProducer;
 import com.restaurant.authservice.core.rpc.IUserServiceRpcClient;
 import com.restaurant.authservice.core.service.auth.dto.*;
+import com.restaurant.authservice.core.service.blacklist.IBackListService;
 import com.restaurant.authservice.core.service.jwt.IJwtService;
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.core.enums.NotiType;
 import com.restaurant.commons.core.rpc.notification.SendEmailEvent;
 import com.restaurant.commons.core.rpc.user.CreateUserResponse;
+import com.restaurant.commons.core.rpc.user.FoundUserResponse;
 import com.restaurant.commons.exception.AppException;
 import org.apache.dubbo.rpc.RpcException;
 import org.slf4j.Logger;
@@ -29,17 +31,20 @@ public class AuthServiceImpl implements IAuthService {
     private final PasswordEncoder _passwordEncoder;
     private final IJwtService _jwtService;
     private final KafkaProducer _authEventProducer;
+    private final IBackListService _blackListService;
 
     public AuthServiceImpl(
             IUserServiceRpcClient userServiceRpcClient,
             PasswordEncoder passwordEncoder,
             KafkaProducer authEventProducer,
-            IJwtService jwtService
+            IJwtService jwtService,
+            IBackListService backListService
     ){
         this._userServiceRpcClient = userServiceRpcClient;
         this._passwordEncoder = passwordEncoder;
         this._jwtService = jwtService;
         this._authEventProducer = authEventProducer;
+        this._blackListService = backListService;
     }
 
     @Override
@@ -136,6 +141,49 @@ public class AuthServiceImpl implements IAuthService {
                     HttpStatus.SERVICE_UNAVAILABLE.name()
             );
         }
+    }
+
+    @Override
+    public VerifyAccountResponse verifyAccountThroughEmail(VerifyAccountRequest request){
+        _log.info("verifyContact, type={}", request.getType());
+
+        //check if token is valid
+        if (!_jwtService.isValidToken(request.getToken())) {
+            _log.error("verifyAccountThroughEmail, invalid token {}", request.getToken());
+            throw new AppException(
+                    "auth.verify.token.invalid",
+                    Constant.RES3005,
+                    HttpStatus.BAD_REQUEST.name()
+            );
+        }
+
+        // Check if token is blacklisted
+        if(this._blackListService.isBlacklisted(request.getToken())){
+            _log.warn("verifyAccountThroughEmail, token is blacklisted");
+            throw  new AppException(
+                    "auth.verify.token.invalid",
+                    Constant.RES3005,
+                    HttpStatus.BAD_REQUEST.name()
+            );
+        }
+
+        String userId = _jwtService.extractSubject(request.getToken());
+
+        FoundUserResponse user;
+
+        try{
+            user = _userServiceRpcClient.findById(userId);
+        } catch (RpcException rpcEx) {
+            _log.error("verifyAccountThroughEmail, User-service RPC failed. id={}",
+                    userId, rpcEx);
+            throw new AppException(
+                    "user.service.rpc.error",
+                    Constant.RES0007,
+                    HttpStatus.SERVICE_UNAVAILABLE.name()
+            );
+        }
+
+        return null;
     }
 
     @Override

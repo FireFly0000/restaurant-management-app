@@ -2,10 +2,10 @@ package com.restaurant.authservice.core.controller.v1;
 
 import com.restaurant.authservice.core.service.auth.IAuthService;
 import com.restaurant.authservice.core.service.auth.dto.RegisterRequest;
+import com.restaurant.authservice.core.service.auth.dto.VerifyAccountRequest;
+import com.restaurant.authservice.core.service.auth.dto.VerifyAccountResponse;
 import com.restaurant.authservice.utils.Utils;
 import com.restaurant.commons.utils.AppUtils;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,24 +43,13 @@ public class AuthController {
                 );
     }
 
-/*    @GetMapping("/verify")
-    public ResponseEntity<?> verify(@RequestParam String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(secretKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+    @GetMapping("/verify")
+    public ResponseEntity<?> verify(@Valid @ModelAttribute VerifyAccountRequest request) {
+        _log.info("verifyContact, request received for type={}", request.getType());
 
-        String userId = claims.getSubject();
-        String type = claims.get("type", String.class);
-
-        if (!"VERIFY_EMAIL".equals(type)) {
-            throw new AppException("Invalid token type");
-        }
-
-        // mark user as verified
-        userService.verifyUser(userId);
+        String successMsg = Utils.getMessage("auth.verify.success");
+        VerifyAccountResponse result = _authService.verifyAccountThroughEmail(request);
 
         return ResponseEntity.ok("Email verified successfully");
-    }*/
+    }
 }

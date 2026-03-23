@@ -11,8 +11,9 @@ import javax.crypto.SecretKey;
 @Data
 @Configuration
 public class AuthServiceProperties {
-
     private Jwt jwt;
+    private Redis redis;
+    private Blacklist blacklist;
 
     @Data
     public static class Jwt {
@@ -20,5 +21,16 @@ public class AuthServiceProperties {
         private long accessTokenExpiration;
         private long refreshTokenExpiration;
         private long verifyAccountTokenExpiration;
+    }
+
+    @Data
+    public static class Blacklist {
+        private String prefix;
+    }
+
+    @Data
+    public static class Redis {
+        private String host;
+        private int port;
     }
 }
