@@ -10,6 +10,7 @@ service UserService{
     rpc ExistsByPhoneNumber(ExistsByPhoneNumberRequest) returns (ExistsResponse);
     rpc ExistsByEmail(ExistsByEmailRequest) returns (ExistsResponse);
     rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+    rpc getUsersByIds(GetUsersByIdsRequest) returns (GetUsersByIdsResponse);
 
     // Lookup
     rpc FindByEmail(FindByEmailRequest) returns (FoundUserResponse);
@@ -52,6 +53,24 @@ message CreateUserResponse {
     string email = 2;
     string first_name = 3;
     string last_name = 4;
+    string phone_number = 5;
+    bool success = 6;
+    string message = 7;
+}
+
+message GetUsersByIdsRequest {
+    repeated string ids = 1;
+}
+
+message GetUsersByIdsResponse {
+    repeated UserRpcResponse users = 1;
+}
+
+message UserRpcResponse {
+    string id = 1;
+    string user_type = 2;
+    string email = 3;
+    string birth_date = 4;
     string phone_number = 5;
     bool success = 6;
     string message = 7;

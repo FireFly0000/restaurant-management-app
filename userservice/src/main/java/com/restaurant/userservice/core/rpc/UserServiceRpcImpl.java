@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @DubboService(
         version = "1.0.0",
@@ -24,14 +23,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBase {
 
-    private final IUserService userService;
+    private final IUserService _userService;
     private final Logger _log = LoggerFactory.getLogger(UserServiceRpcImpl.class);
 
     @Override
     public ExistsResponse existsByEmail(ExistsByEmailRequest request) {
         try {
             _log.info("RPC: existsByEmail called with email={}", request.getEmail());
-            boolean exists = userService.existsByEmail(request.getEmail());
+            boolean exists = _userService.existsByEmail(request.getEmail());
             return ExistsResponse.newBuilder()
                     .setExists(exists)
                     .build();
@@ -45,7 +44,7 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
     public ExistsResponse existsByPhoneNumber(ExistsByPhoneNumberRequest request) {
         try {
             _log.info("RPC: existsByPhoneNumber called with phone number={}", request.getPhoneNumber());
-            boolean exists = userService.existsByPhoneNumber(request.getPhoneNumber());
+            boolean exists = _userService.existsByPhoneNumber(request.getPhoneNumber());
             return ExistsResponse.newBuilder()
                     .setExists(exists)
                     .build();
@@ -56,12 +55,34 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
     }
 
     @Override
+    public GetUsersByIdsResponse getUsersByIds(GetUsersByIdsRequest request) {
+        try{
+            _log.info("getUsersByIds, Start get users by Ids");
+            List<UUID> ids = request.getIdsList().stream().map(UUID::fromString).toList();
+            List<User> users = _userService.getUsersByIds(ids);
+            List<UserRpcResponse> usersReponse = users.stream().map(this::buildUserRpcResponse).toList();
+
+            return GetUsersByIdsResponse.newBuilder()
+                    .addAllUsers(usersReponse)
+                    .build();
+
+        }catch (Exception e){
+            _log.error("getUsersByIds, get users failed: {}", e.getMessage());
+            throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
+        }
+    }
+
+    @Override
     public CreateUserResponse createUser(CreateUserRequest request) {
         try {
-            User saved = userService.save(buildUserFromRequest(request));
+            User saved = _userService.save(buildUserFromRequest(request));
 
             return CreateUserResponse.newBuilder()
                     .setId(saved.getId().toString())
+                    .setEmail(request.getEmail())
+                    .setFirstName(request.getFirstName())
+                    .setLastName(request.getLastName())
+                    .setPhoneNumber(request.getPhoneNumber())
                     .setSuccess(true)
                     .setMessage("User created successfully")
                     .build();
@@ -73,19 +94,70 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
     }
 
     @Override
-    public GetUsersByIdsResponse getUsersByIds(GetUsersByIdsRequest request) {
-        try{
-            _log.info("getUsersByIds, Start get users by Ids");
-            List<UUID> ids = request.getIdsList().stream().map(UUID::fromString).toList();
-            List<User> users = userService.getUsersByIds(ids);
-            List<UserRpcResponse> usersReponse = users.stream().map(this::buildUserRpcResponse).toList();
+    public FoundUserResponse findByEmail(FindByEmailRequest findByEmailRequest) {
+        try {
+            User findByEmailUser = _userService.findByEmail(findByEmailRequest.getEmail());
 
-            return GetUsersByIdsResponse.newBuilder()
-                    .addAllUsers(usersReponse)
+            if (findByEmailUser == null) {
+                return FoundUserResponse.newBuilder()
+                        .setFound(false)
+                        .build();
+            }
+
+            return FoundUserResponse.newBuilder()
+                    .setId(findByEmailUser.getId().toString())
+                    .setEmail(findByEmailUser.getEmail())
+                    .setPassword(findByEmailUser.getPassword())
+                    .setFirstName(findByEmailUser.getFirstName())
+                    .setLastName(findByEmailUser.getLastName())
+                    .setAvatarUrl(
+                            findByEmailUser.getAvatarUrl() != null
+                                    ? findByEmailUser.getAvatarUrl() : ""
+                    )
+                    .setUserType(findByEmailUser.getUserType().toString())
+                    .setIsActive(findByEmailUser.getIsActive())
+                    .setIsVerified(findByEmailUser.getIsVerified())
+                    .setIsDeleted(findByEmailUser.getIsDeleted())
+                    .setFound(true)
                     .build();
 
-        }catch (Exception e){
-            _log.error("getUsersByIds, get users failed: {}", e.getMessage());
+        } catch (Exception e){
+            _log.error("RPC: find user by email failed", e);
+            throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
+        }
+    }
+
+    @Override
+    public FoundUserResponse findById(FindByIdRequest findByIdRequest) {
+        try {
+            UUID uuid = UUID.fromString(findByIdRequest.getId());
+            User findByIdUser = _userService.findById(uuid);
+
+            if (findByIdUser == null) {
+                return FoundUserResponse.newBuilder()
+                        .setFound(false)
+                        .build();
+            }
+
+            return FoundUserResponse.newBuilder()
+                    .setId(findByIdUser.getId().toString())
+                    .setEmail(findByIdUser.getEmail())
+                    .setPassword(findByIdUser.getPassword())
+                    .setFirstName(findByIdUser.getFirstName())
+                    .setLastName(findByIdUser.getLastName())
+                    .setAvatarUrl(
+                            findByIdUser.getAvatarUrl() != null
+                                    ? findByIdUser.getAvatarUrl() : ""
+                    )
+                    .setUserType(findByIdUser.getUserType().toString())
+                    .setIsActive(findByIdUser.getIsActive())
+                    .setIsVerified(findByIdUser.getIsVerified())
+                    .setIsDeleted(findByIdUser.getIsDeleted())
+                    .setFound(true)
+                    .build();
+
+        } catch (Exception e){
+            _log.error("RPC: find user by email failed", e);
             throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
         }
     }
@@ -100,6 +172,7 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
         user.setAvatarUrl(request.getAvatarUrl().isEmpty() ? null : request.getAvatarUrl());
         user.setIsActive(true);
         user.setIsVerified(false);
+        user.setIsDeleted(false);
         user.setUserType(UserType.CUSTOMER);
         return user;
     }
@@ -111,7 +184,7 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
                 .setLastName(user.getLastName())
                 .setEmail(user.getEmail())
                 .setAvatarUrl(user.getAvatarUrl())
-                .setBirthDate(user.getBirhtDate().toString())
+                .setBirthDate(user.getBirthDate().toString())
                 .setPhoneNumber(user.getPhoneNumber())
                 .setUserType(user.getUserType().name())
                 .build();

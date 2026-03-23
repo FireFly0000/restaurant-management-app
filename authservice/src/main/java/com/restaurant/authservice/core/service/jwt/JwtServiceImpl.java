@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -20,14 +21,12 @@ public class JwtServiceImpl implements IJwtService {
     private final SecretKey _secretKey;
     private final long _accessTokenExpiration;   // e.g. 900000 = 15 minutes
     private final long _refreshTokenExpiration;  // e.g. 604800000 = 7 days
-    private final long _verifyAccountTokenExpiration;
     private static final Logger _log = LoggerFactory.getLogger(JwtServiceImpl.class);
 
     public JwtServiceImpl(AuthServiceProperties properties){
         this._secretKey = getSecretKey(properties.getJwt().getSecret());
         this._accessTokenExpiration = properties.getJwt().getAccessTokenExpiration();
         this._refreshTokenExpiration = properties.getJwt().getRefreshTokenExpiration();
-        this._verifyAccountTokenExpiration = properties.getJwt().getVerifyAccountTokenExpiration();
     }
 
     @Override
@@ -62,18 +61,6 @@ public class JwtServiceImpl implements IJwtService {
                 .signWith(_secretKey)
                 .compact();
     }
-
-    @Override
-    public String generateVerifyAccountToken(String userId, Map<String, Object> extraClaims) {
-        return Jwts.builder()
-                .subject(userId)
-                .claims(extraClaims)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + _verifyAccountTokenExpiration ))
-                .signWith(_secretKey)
-                .compact();
-    }
-
 
     @Override
     public boolean isValidToken(String token) {
