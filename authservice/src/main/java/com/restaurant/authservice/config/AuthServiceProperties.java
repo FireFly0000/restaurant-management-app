@@ -19,5 +19,6 @@ public class AuthServiceProperties {
         private String secret;
         private long accessTokenExpiration;
         private long refreshTokenExpiration;
+        private long verifyAccountTokenExpiration;
     }
 }

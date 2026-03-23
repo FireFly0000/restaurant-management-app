@@ -26,12 +26,12 @@ public abstract class AbstractNotificationPayload {
     /**
      * User ID (optional)
      */
-    protected Long userId;
+    protected String userId;
 
     /**
      * Tracking ID (để link với notification_recipients)
      */
-    protected Long recipientId;
+    protected String recipientId;
 
     /**
      * Validate payload

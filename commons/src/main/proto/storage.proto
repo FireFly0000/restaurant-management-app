@@ -15,6 +15,41 @@ message CreateFileOnCloudResponse {
   string url = 1;
 }
 
-message FileCleanUpEvent {
-  repeated string urls = 1;
+message UploadLargeFileRequest {
+  oneof data {
+    FileMetadata medatadata = 1;
+    bytes chunk_data = 2;
+  }
+}
+
+message UploadFileRequest {
+    FileMetadata medatadata = 1;
+    bytes file_data = 2;
+}
+
+message UploadFileResponse{
+  string cdn_url = 1;
+}
+
+message DeleteFileEvent{
+  repeated PathFileSaved files = 1;
+}
+
+message PathFileSaved {
+  string object_key = 1;
+  string bucket_name = 2;
+}
+
+message FileMetadata {
+  string bucket_name = 1;
+  string entity_id = 2;
+  string file_category = 3;
+  int64 content_length = 4;
+  string file_name = 5;
+  string file_type = 6;
+}
+
+service StorageService {
+  rpc UploadStream(stream UploadLargeFileRequest) returns (UploadFileResponse);
+  rpc UploadFile(UploadFileRequest) returns (UploadFileResponse);
 }

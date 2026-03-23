@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Date;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger _log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
@@ -38,6 +40,7 @@ public class GlobalExceptionHandler {
                 .message(msg)
                 .httpStatus(ex.getHttpStatus())
                 .errorCode(ex.getErrorCode())
+                .timestamp(new Date())
                 .build();
     }
 
@@ -48,6 +51,7 @@ public class GlobalExceptionHandler {
                 .message("Unexcepted Error.")
                 .httpStatus(HttpStatus.INTERNAL_SERVER_ERROR.name())
                 .errorCode(Constant.RES0001)
+                .timestamp(new Date())
                 .build();
     }
 
@@ -61,6 +65,7 @@ public class GlobalExceptionHandler {
                 .message(defaultMessage)
                 .httpStatus(HttpStatus.BAD_REQUEST.name())
                 .errorCode(Constant.RES1001)
+                .timestamp(new Date())
                 .build();
     }
 
@@ -72,6 +77,7 @@ public class GlobalExceptionHandler {
                 .message("Parameter is invalid.")
                 .httpStatus(HttpStatus.BAD_REQUEST.name())
                 .errorCode(Constant.RES1001)
+                .timestamp(new Date())
                 .build();
     }
 }

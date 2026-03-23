@@ -3,22 +3,24 @@ package com.restaurant.businessservice.core.controller.v1;
 import com.restaurant.businessservice.common.MapperUtils;
 import com.restaurant.businessservice.common.MsgUtil;
 import com.restaurant.businessservice.core.service.business.IBusinessService;
-import com.restaurant.businessservice.core.service.business.dto.BusinessResponse;
-import com.restaurant.businessservice.core.service.business.dto.CreateBusinessRequest;
-import com.restaurant.businessservice.core.service.business.dto.UpdateBusinessRequest;
-import com.restaurant.businessservice.core.service.business.dto.UploadFileRequest;
+import com.restaurant.businessservice.core.service.business.dto.*;
 import com.restaurant.businessservice.model.Business;
 import com.restaurant.commons.core.dtos.ApiResponse;
+import com.restaurant.commons.core.dtos.Pagination;
 import com.restaurant.commons.utils.AppUtils;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/businesses")
@@ -34,9 +36,9 @@ public class BusinessController {
         this._msgUtil = _msgUtil;
     }
 
-    @PostMapping(value = "/", consumes = "application/json", produces = "application/json")
+    @PostMapping(value = "/", produces = "application/json")
     @PreAuthorize("@_authorizer.isLogedIn()")
-    public ResponseEntity<?> create(@RequestBody @Valid CreateBusinessRequest request){
+    public ResponseEntity<?> create(@ModelAttribute @Valid CreateBusinessRequest request){
         Business business = this._businessService.create(request);
         BusinessResponse response = MapperUtils.getBusinessResponse(business, new HashMap<>());
         ApiResponse apiResponse = AppUtils.buildResponse(_msgUtil.getMessage("business.create.success"),response, null);
@@ -98,6 +100,49 @@ public class BusinessController {
         response.put("url", result);
 
         ApiResponse apiResponse = AppUtils.buildResponse(_msgUtil.getMessage("business.update_avatar.success"),response, null);
+        return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/", produces = "application/json")
+    @PreAuthorize("@_authorizer.isLogedIn()")
+    public ResponseEntity<?> getListBusiness(
+            @RequestParam(value = "page", defaultValue = "0") Integer page,
+            @RequestParam(value = "limit", defaultValue = "30") Integer limit,
+            @RequestParam(value = "sort_by", defaultValue = "id") String sortBy,
+            @RequestParam(value = "sort", defaultValue = "DESC") String sort,
+            @RequestParam(value = "is_deleted", required = false) Boolean isDeleted,
+            @RequestParam(value = "is_actived", required = false) Boolean isActived,
+            @RequestParam(value = "search", required = false) String search
+    ){
+        try{
+            Sort.Direction.fromString(sort);
+        }catch (Exception ex){
+            sort = "DESC";
+        }
+
+        BusinessFilter filter = new BusinessFilter();
+        filter.setPage(page);
+        filter.setLimit(limit);
+        filter.setSortBy(sortBy);
+        filter.setIsDeleted(isDeleted);
+        filter.setIsActived(isActived);
+        filter.setSort(sort);
+        filter.setSearch(search);
+
+        Page<Business> pageBusiness = _businessService.getListBusinesses(filter);
+
+        Pagination pagination = Pagination.builder()
+                .hasNext(pageBusiness.hasNext())
+                .hasPrevious(pageBusiness.hasPrevious())
+                .totalItems(pageBusiness.getTotalElements())
+                .totalPages(pageBusiness.getTotalPages())
+                .limit(filter.getLimit())
+                .page(filter.getPage())
+                .build();
+
+        List<BusinessResponse> response = pageBusiness.getContent().stream().map(b -> MapperUtils.getBusinessResponse(b, new HashMap<>())).collect(Collectors.toList());
+
+        ApiResponse apiResponse = AppUtils.buildResponse(_msgUtil.getMessage("business.success"),response, null, pagination);
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
 }

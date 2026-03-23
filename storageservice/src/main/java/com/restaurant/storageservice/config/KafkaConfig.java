@@ -1,4 +1,4 @@
-package com.restaurant.businessservice.core.config;
+package com.restaurant.storageservice.config;
 
 import com.restaurant.commons.constant.Constant;
 import org.apache.kafka.common.TopicPartition;
@@ -11,12 +11,12 @@ import org.springframework.util.backoff.FixedBackOff;
 
 @Configuration
 public class KafkaConfig {
-    private final NotificationProperties _properties;
+    private final StorageProperties _properties;
 
     public KafkaConfig(
-            NotificationProperties properties
+        StorageProperties _properties
     ){
-        this._properties = properties;
+        this._properties = _properties;
     }
 
     @Bean

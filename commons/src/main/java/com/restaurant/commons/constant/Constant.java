@@ -10,6 +10,7 @@ public class Constant {
     /* REQUEST HEADER / gRPC METADATA */
     public static final String H_USER_ID = "X-User-Id";
     public static final String H_FORWARDED_FOR = "X-Forwarded-For";
+    public static final String H_EVENT_ID = "X-Event-Id";
     /* COMMON */
     public static final String DEFAULT_ZONE = "Asia/Ho_Chi_Minh";
     public static final String USER_ID = "USER_ID";

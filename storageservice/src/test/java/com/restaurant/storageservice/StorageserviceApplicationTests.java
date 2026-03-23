@@ -1,10 +1,10 @@
-package com.restaurant.notification;
+package com.restaurant.storageservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class NotificationApplicationTests {
+class StorageserviceApplicationTests {
 
     @Test
     void contextLoads() {

@@ -1,5 +1,7 @@
 package com.restaurant.notification.core.kafka;
 
+import com.restaurant.commons.constant.Constant;
+import com.restaurant.commons.constant.EmailTemplate;
 import com.restaurant.commons.core.enums.NotiChannel;
 import com.restaurant.commons.core.enums.NotiStatus;
 import com.restaurant.commons.core.enums.NotiType;
@@ -8,39 +10,53 @@ import com.restaurant.notification.core.service.notification.INotificationServic
 import com.restaurant.notification.core.service.sender.IEmailSender;
 import com.restaurant.notification.core.service.sender.dto.EmailPayload;
 import com.restaurant.notification.core.service.sender.dto.SendResult;
+import com.restaurant.notification.core.service.template.IEmailTemplateRenderer;
 import com.restaurant.notification.model.Notification;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
-import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-
+import java.util.*;
 
 @Service
-public class NotificationConsumer {
-    private static final Logger _log = LoggerFactory.getLogger(NotificationConsumer.class);
+public class UserEventHandler {
+    private static final Logger _log = LoggerFactory.getLogger(UserEventHandler.class);
 
     private final IEmailSender _emailSender;
     private final INotificationService _notificationService;
+    private final IEmailTemplateRenderer _templateRenderer;
 
-    public NotificationConsumer(
-        IEmailSender _emailSender,
-        INotificationService _notificationService
+    public UserEventHandler(
+            IEmailSender _emailSender,
+            INotificationService _notificationService,
+            IEmailTemplateRenderer _templateRenderer
     ){
         this._emailSender = _emailSender;
         this._notificationService = _notificationService;
+        this._templateRenderer = _templateRenderer;
     }
 
-    @KafkaListener(topics = "notify.email", containerFactory = "kafkaListenerContainerFactory", concurrency = "${app.notification.kafka.consumer.concurency}")
-    public void handleEmailNotification(@Payload List<SendEmailEvent> events, @Header("X-Event-Id") List<String> eventIds, Acknowledgment ack){
-        _log.info("handleEmailNotification, Prepare to send {} email", events.size());
+    @KafkaListener(topics = "user.created.event", containerFactory = "kafkaListenerContainerFactory", concurrency = "${app.notification.kafka.consumer.concurency}")
+    public void handleUserCreatedEvent(List<ConsumerRecord<String, SendEmailEvent>> records, Acknowledgment ack){
+        _log.info("handleUserCreatedEvent, Prepare to send {} email", records.size());
         try {
+            List<String> eventIds =  new ArrayList<>();
+            List<SendEmailEvent> events = new ArrayList<>();
+            for (ConsumerRecord<String, SendEmailEvent> record : records) {
+                Header header = record.headers().lastHeader(Constant.H_EVENT_ID);
+
+                String eventId = header != null
+                        ? new String(header.value())
+                        : null;
+
+                eventIds.add(eventId);
+                events.add(record.value());
+            }
+
             List<EmailPayload> payloads = new ArrayList<>();
             List<Notification> notifications = new ArrayList<>();
             Set<String> eventSuccessIds = this._notificationService.checkExistNotificationByEventIds(eventIds);
@@ -48,10 +64,14 @@ public class NotificationConsumer {
                 SendEmailEvent event =  events.get(i);
                 String eventId = eventIds.get(i);
                 if(!eventSuccessIds.contains(eventId)){
+
+                    Map<String, Object> templateVars = extractMetadata(event);
+                    String renderedHtml = _templateRenderer.render(EmailTemplate.VERIFY_EMAIL, templateVars);
+
                     EmailPayload payload = EmailPayload.builder()
                             .to(new ArrayList<>(event.getToList()))
                             .subject(event.getSubject())
-                            .bodyHtml(event.getBodyHtml())
+                            .bodyHtml(renderedHtml)
                             .bodyText(event.getBodyText())
                             .from(event.getFrom())
                             .replyTo(new ArrayList<>(event.getReplyToList()))
@@ -89,9 +109,27 @@ public class NotificationConsumer {
 
             ack.acknowledge();
         } catch(Exception ex){
-            _log.error("handleEmailNotification, {}", ex.getMessage());
+            _log.error("handleUserCreatedEvent, {}", ex.getMessage());
 
-            throw new RuntimeException("handleEmailNotification");
+            throw new RuntimeException("handleUserCreatedEvent");
         }
+    }
+
+    // Convert google.protobuf.Struct metadata → Map<String, Object>
+    private Map<String, Object> extractMetadata(SendEmailEvent event) {
+        Map<String, Object> vars = new HashMap<>();
+
+        if (event.hasMetadata()) {
+            event.getMetadata().getFieldsMap().forEach((key, value) -> {
+                switch (value.getKindCase()) {
+                    case STRING_VALUE -> vars.put(key, value.getStringValue());
+                    case NUMBER_VALUE -> vars.put(key, value.getNumberValue());
+                    case BOOL_VALUE   -> vars.put(key, value.getBoolValue());
+                    default           -> vars.put(key, value.toString());
+                }
+            });
+        }
+
+        return vars;
     }
 }

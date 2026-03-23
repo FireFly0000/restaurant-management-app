@@ -8,6 +8,12 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 10MB
+
   cloud:
     nacos:
       discovery:
@@ -196,4 +202,9 @@ app:
       thread-name-prefix: "BusinessOutboxWorker-"
       batch-size: 50
       max_retries: 3
+
+    cloudflare:
+      r2:
+        public-bucket: ${CLOUDFLARE_R2_PUBLIC_BUCKET}
+        private-bucket: ${CLOUDFLARE_R2_PRIVATE_BUCKET}
 
