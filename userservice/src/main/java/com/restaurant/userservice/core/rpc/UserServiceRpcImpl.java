@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @DubboService(
@@ -49,6 +50,24 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
                     .build();
         } catch (Exception e){
             _log.error("RPC: checked phone number exists failed", e);
+            throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
+        }
+    }
+
+    @Override
+    public GetUsersByIdsResponse getUsersByIds(GetUsersByIdsRequest request) {
+        try{
+            _log.info("getUsersByIds, Start get users by Ids");
+            List<UUID> ids = request.getIdsList().stream().map(UUID::fromString).toList();
+            List<User> users = _userService.getUsersByIds(ids);
+            List<UserRpcResponse> usersReponse = users.stream().map(this::buildUserRpcResponse).toList();
+
+            return GetUsersByIdsResponse.newBuilder()
+                    .addAllUsers(usersReponse)
+                    .build();
+
+        }catch (Exception e){
+            _log.error("getUsersByIds, get users failed: {}", e.getMessage());
             throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
         }
     }
@@ -156,5 +175,18 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
         user.setIsDeleted(false);
         user.setUserType(UserType.CUSTOMER);
         return user;
+    }
+
+    private UserRpcResponse buildUserRpcResponse(User user) {
+        return UserRpcResponse.newBuilder()
+                .setId(user.getId().toString())
+                .setFirstName(user.getFirstName())
+                .setLastName(user.getLastName())
+                .setEmail(user.getEmail())
+                .setAvatarUrl(user.getAvatarUrl())
+                .setBirthDate(user.getBirthDate().toString())
+                .setPhoneNumber(user.getPhoneNumber())
+                .setUserType(user.getUserType().name())
+                .build();
     }
 }

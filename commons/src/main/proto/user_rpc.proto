@@ -10,6 +10,7 @@ service UserService{
     rpc ExistsByPhoneNumber(ExistsByPhoneNumberRequest) returns (ExistsResponse);
     rpc ExistsByEmail(ExistsByEmailRequest) returns (ExistsResponse);
     rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+    rpc getUsersByIds(GetUsersByIdsRequest) returns (GetUsersByIdsResponse);
 
     // Lookup
     rpc FindByEmail(FindByEmailRequest) returns (FoundUserResponse);
