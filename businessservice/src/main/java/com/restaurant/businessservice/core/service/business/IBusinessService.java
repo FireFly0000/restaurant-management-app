@@ -6,7 +6,6 @@ import org.springframework.data.domain.Page;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 public interface IBusinessService {
@@ -19,6 +18,7 @@ public interface IBusinessService {
     Business update(UUID id, UpdateBusinessRequest request);
     Boolean active(UUID id);
     Boolean inactive(UUID id);
+    Boolean delete(UUID id);
     String updateCoverImage(UUID id, UploadFileRequest request);
     String updateAvatar(UUID id, UploadFileRequest request);
 

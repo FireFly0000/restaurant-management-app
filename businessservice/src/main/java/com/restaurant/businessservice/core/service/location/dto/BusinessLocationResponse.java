@@ -1,15 +1,14 @@
 package com.restaurant.businessservice.core.service.location.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.Date;
 
 @Builder
 @AllArgsConstructor
-@Setter
+@NoArgsConstructor
+@Getter
 public class BusinessLocationResponse {
     private String id;
     private String businessId;
