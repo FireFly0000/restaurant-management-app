@@ -79,4 +79,10 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
 
         return _userServiceStub.findById(request);
     }
+
+    @Override
+    public VerifyAccountRpcResponse verifyAccount(VerifyAccountRpcRequest request){
+        _log.info("Calling user-service via Dubbo: verifyAccount({})", request.getId());
+        return _userServiceStub.verifyAccount(request);
+    }
 }

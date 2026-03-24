@@ -162,6 +162,36 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
         }
     }
 
+    @Override
+    public VerifyAccountRpcResponse verifyAccount(VerifyAccountRpcRequest request) {
+        try {
+            _log.info("RPC verifyAccount, userId={}", request.getId());
+
+            UUID userId = UUID.fromString(request.getId());
+            User user = _userService.verifyAccount(userId);
+
+            if (user == null) {
+                _log.warn("RPC verifyAccount, user not found for userId={}", request.getId());
+                return VerifyAccountRpcResponse.newBuilder()
+                        .setUserNotFound(true)
+                        .build();
+            }
+
+            return VerifyAccountRpcResponse.newBuilder()
+                    .setId(user.getId().toString())
+                    .setEmail(user.getEmail() != null ? user.getEmail() : "")
+                    .setFirstName(user.getFirstName() != null ? user.getFirstName() : "")
+                    .setLastName(user.getLastName() != null ? user.getLastName() : "")
+                    .setPhoneNumber(user.getPhoneNumber() != null ? user.getPhoneNumber() : "")
+                    .setUserNotFound(false)
+                    .build();
+
+        } catch (Exception e) {
+            _log.error("RPC verifyAccount failed for userId={}", request.getId(), e);
+            throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
+        }
+    }
+
     private User buildUserFromRequest(CreateUserRequest request) {
         User user = new User();
         user.setEmail(request.getEmail());

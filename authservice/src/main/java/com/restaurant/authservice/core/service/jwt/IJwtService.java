@@ -6,6 +6,7 @@ import java.util.Optional;
 public interface IJwtService {
     String generateAccessToken(String userId, Map<String, Object> extraClaims);
     String generateRefreshToken(String userId, Map<String, Object> extraClaims);
+    String generateVerifyAccountToken(String userId, Map<String, Object> extraClaims);
     String generateRefreshToken(String userId);
     boolean isValidToken(String token);
     String extractSubject(String token);  // extract userId

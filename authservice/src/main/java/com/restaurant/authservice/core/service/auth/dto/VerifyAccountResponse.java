@@ -12,4 +12,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class VerifyAccountResponse {
     private ContactType type;
+    private String email;
+    private String phoneNumber;
+    private String firstName;
+    private String lastName;
 }

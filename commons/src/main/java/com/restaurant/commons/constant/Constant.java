@@ -32,7 +32,8 @@ public class Constant {
     public static final List<Pair<String, String>> PUBLIC_ENDPOINT = List.of(
             Pair.of(String.format("%s/auth/sign-in", API_V1_PREFIX), HTTP_POST),
             Pair.of(String.format("%s/auth/sign-up", API_V1_PREFIX), HTTP_POST),
-            Pair.of(String.format("%s/auth/refresh-token", API_V1_PREFIX), HTTP_POST)
+            Pair.of(String.format("%s/auth/refresh-token", API_V1_PREFIX), HTTP_POST),
+            Pair.of(String.format("%s/auth/verify", API_V1_PREFIX), HTTP_GET)
     );
 
     /* ERROR CODE */

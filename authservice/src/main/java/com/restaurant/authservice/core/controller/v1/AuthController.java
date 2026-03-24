@@ -1,7 +1,6 @@
 package com.restaurant.authservice.core.controller.v1;
 
 import com.restaurant.authservice.core.service.auth.IAuthService;
-import com.restaurant.authservice.core.service.auth.dto.RegisterRequest;
 import com.restaurant.authservice.core.service.auth.dto.VerifyAccountRequest;
 import com.restaurant.authservice.core.service.auth.dto.VerifyAccountResponse;
 import com.restaurant.authservice.core.service.auth.dto.*;
@@ -53,7 +52,14 @@ public class AuthController {
         String successMsg = Utils.getMessage("auth.verify.success");
         VerifyAccountResponse result = _authService.verifyAccountThroughEmail(request);
 
-        return ResponseEntity.ok("Email verified successfully");
+        return new ResponseEntity<>(
+                AppUtils.buildResponse(
+                        successMsg,
+                        result,
+                        null
+                ),
+                HttpStatus.OK
+        );
     }
 
     @PostMapping("/sign-in")
