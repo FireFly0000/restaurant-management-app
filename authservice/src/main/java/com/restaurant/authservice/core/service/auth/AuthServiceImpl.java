@@ -9,10 +9,12 @@ import com.restaurant.authservice.core.service.blacklist.IBackListService;
 import com.restaurant.authservice.core.service.jwt.IJwtService;
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.constant.ContactType;
+import com.restaurant.commons.constant.EmailTemplate;
 import com.restaurant.commons.core.enums.NotiType;
 import com.restaurant.commons.core.rpc.notification.SendEmailEvent;
 import com.restaurant.commons.core.rpc.user.*;
 import com.restaurant.commons.exception.AppException;
+import io.jsonwebtoken.Claims;
 import org.apache.dubbo.rpc.RpcException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -181,48 +183,16 @@ public class AuthServiceImpl implements IAuthService {
             }
             _log.info("Registration successful for email: {}", request.getEmail());
 
-            //Build verify token
-            Map<String, Object> claims = new HashMap<>();
-            claims.put("email", request.getEmail());
-            claims.put("firstName", request.getFirstName());
-            claims.put("lastName", request.getLastName());
-            claims.put("type", "VERIFY_EMAIL");
-
-            String verifyToken = _jwtService.generateVerifyAccountToken(
-                    createdUser.getId(), claims
+           //send email helper call here
+            sendVerifyEmail(
+                    createdUser.getId(),
+                    createdUser.getEmail(),
+                    createdUser.getPhoneNumber(),
+                    createdUser.getFirstName(),
+                    createdUser.getLastName(),
+                    EmailTemplate.VERIFY_EMAIL,
+                    ContactType.EMAIL
             );
-
-            String verifyUrl = UriComponentsBuilder
-                    .fromUriString("http://localhost:8081")  // "http://localhost:8081"
-                    .path("/api/v1/auth/verify")
-                    .queryParam("token", verifyToken)
-                    .queryParam("type", ContactType.EMAIL.name())
-                    .toUriString();
-
-            // Build metadata map
-            Map<String, Value> metadataFields = new HashMap<>();
-            metadataFields.put("firstName", Value.newBuilder().setStringValue(request.getFirstName()).build());
-            metadataFields.put("lastName",  Value.newBuilder().setStringValue(request.getLastName()).build());
-            metadataFields.put("verifyUrl", Value.newBuilder().setStringValue(verifyUrl).build());
-
-            Struct metadata = Struct.newBuilder()
-                    .putAllFields(metadataFields)
-                    .build();
-
-            SendEmailEvent emailEvent = SendEmailEvent.newBuilder()
-                    .setRecipient(request.getEmail())
-                    .setUserId(createdUser.getId())
-                    .setRecipientId(createdUser.getId())
-                    .addTo(request.getEmail())
-                    .setSubject("Please verify your account!")
-                    .setMetadata(metadata)
-                    .setFrom("no-reply@restaurant.com")
-                    .setType(NotiType.SYSTEM.name())
-                    .build();                                  // userId is optional — set only if available
-
-            _log.info("signUp, about to send Kafka event for email: {}", request.getEmail());
-            _authEventProducer.pushUserCreatedEvent(createdUser.getId() , emailEvent, new HashMap<>() );
-            _log.info("signUp, Kafka event dispatched for email: {}", request.getEmail());
 
             return SignupResponse.builder()
                     .id(createdUser.getId())
@@ -248,8 +218,8 @@ public class AuthServiceImpl implements IAuthService {
     public VerifyAccountResponse verifyAccountThroughEmail(VerifyAccountRequest request) {
         _log.info("verifyAccountThroughEmail, type={}", request.getType());
 
-        if (!_jwtService.isValidToken(request.getToken())) {
-            _log.error("verifyAccountThroughEmail, invalid token {}", request.getToken());
+        if (!_jwtService.isValidTokenIgnoreExpiry(request.getToken())) {
+            _log.warn("verifyAccountThroughEmail, invalid token signature {}", request.getToken());
             throw new AppException(
                     "auth.verify.token.invalid",
                     Constant.RES3005,
@@ -264,6 +234,36 @@ public class AuthServiceImpl implements IAuthService {
                     Constant.RES3005,
                     HttpStatus.BAD_REQUEST.name()
             );
+        }
+
+        if (_jwtService.isTokenExpired(request.getToken())) {
+            _log.info("verifyAccountThroughEmail, token expired, resending new verify token");
+
+            String userId = _jwtService.extractSubjectIgnoreExpiry(request.getToken());
+            String email     = _jwtService.extractClaimIgnoreExpiry(request.getToken(), "email", String.class);
+            String firstName = _jwtService.extractClaimIgnoreExpiry(request.getToken(), "firstName", String.class);
+            String lastName  = _jwtService.extractClaimIgnoreExpiry(request.getToken(), "lastName", String.class);
+            String phoneNumber = _jwtService.extractClaimIgnoreExpiry(request.getToken(), "phoneNumber", String.class);
+
+            sendVerifyEmail(
+                    userId,
+                    email,
+                    phoneNumber,
+                    firstName,
+                    lastName,
+                    EmailTemplate.RESEND_VERIFY_EMAIL,
+                    request.getType()
+            );
+
+            return VerifyAccountResponse.builder()
+                    .type(ContactType.EMAIL)
+                    .email(email)
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .phoneNumber(phoneNumber)
+                    .verified(false)
+                    .isTokenExpired(true)
+                    .build();
         }
 
         String userId = _jwtService.extractSubject(request.getToken());
@@ -338,8 +338,10 @@ public class AuthServiceImpl implements IAuthService {
                 .type(ContactType.EMAIL)
                 .email(verifiedUser.getEmail())
                 .firstName(verifiedUser.getFirstName())
-                .lastName(verifiedUser.getFirstName())
+                .lastName(verifiedUser.getLastName())
                 .phoneNumber(verifiedUser.getPhoneNumber())
+                .verified(true)
+                .isTokenExpired(false)
                 .build();
     }
 
@@ -417,5 +419,77 @@ public class AuthServiceImpl implements IAuthService {
     @Override
     public Boolean validateToken(ValidateTokenRequest request) {
         return null;
+    }
+
+    private void sendVerifyEmail(
+            String userId,
+            String email,
+            String phoneNumber,
+            String firstName,
+            String lastName,
+            String templateName,
+            ContactType type
+    ) {
+        FoundUserResponse user;
+        try {
+            user = _userServiceRpcClient.findById(userId);
+        } catch (RpcException rpcEx) {
+            _log.error("sendVerifyToken, RPC failed for userId={}", userId, rpcEx);
+            throw new AppException("user.service.rpc.error", Constant.RES0007, HttpStatus.SERVICE_UNAVAILABLE.name());
+        }
+
+        if (!user.getFound() || !user.getIsActive() || user.getIsDeleted()) {
+            throw new AppException("auth.verify.user_not_found", Constant.RES3002, HttpStatus.UNAUTHORIZED.name());
+        }
+
+        if (user.getIsVerified()) {
+            _log.info("_resendVerifyToken, account already verified for userId={}", userId);
+            return;
+        }
+
+        //Build verify token
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", email);
+        claims.put("phoneNumber", phoneNumber);
+        claims.put("firstName", firstName);
+        claims.put("lastName", lastName);
+        claims.put("type", "VERIFY_EMAIL");
+
+        String verifyToken = _jwtService.generateVerifyAccountToken(
+                userId, claims
+        );
+
+        String verifyUrl = UriComponentsBuilder
+                .fromUriString("http://localhost:8081")  // "http://localhost:8081"
+                .path("/api/v1/auth/verify")
+                .queryParam("token", verifyToken)
+                .queryParam("type", ContactType.EMAIL.name())
+                .toUriString();
+
+        // Build metadata map
+        Map<String, Value> metadataFields = new HashMap<>();
+        metadataFields.put("firstName", Value.newBuilder().setStringValue(firstName).build());
+        metadataFields.put("lastName",  Value.newBuilder().setStringValue(lastName).build());
+        metadataFields.put("verifyUrl", Value.newBuilder().setStringValue(verifyUrl).build());
+
+        Struct metadata = Struct.newBuilder()
+                .putAllFields(metadataFields)
+                .build();
+
+        SendEmailEvent emailEvent = SendEmailEvent.newBuilder()
+                .setRecipient(email)
+                .setUserId(userId)
+                .setRecipientId(userId)
+                .addTo(email)
+                .setSubject("Please verify your account!")
+                .setMetadata(metadata)
+                .setFrom("no-reply@restaurant.com")
+                .setType(NotiType.SYSTEM.name())
+                .setTemplateName(templateName)
+                .build();                                  // userId is optional — set only if available
+
+        _log.info("signUp, about to send Kafka event for email: {}", email);
+        _authEventProducer.pushUserCreatedEvent(userId , emailEvent, new HashMap<>() );
+        _log.info("signUp, Kafka event dispatched for email: {}", email);
     }
 }

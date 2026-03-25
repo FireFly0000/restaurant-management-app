@@ -50,7 +50,19 @@ public class AuthController {
         _log.info("verifyContact, request received for type={}", request.getType());
 
         String successMsg = Utils.getMessage("auth.verify.success");
+        String expiredMsg = Utils.getMessage("auth.verify.token_expired");
         VerifyAccountResponse result = _authService.verifyAccountThroughEmail(request);
+
+        if(result.isTokenExpired()){
+            return new ResponseEntity<>(
+                    AppUtils.buildResponse(
+                            expiredMsg,
+                            result,
+                            null
+                    ),
+                    HttpStatus.OK
+            );
+        }
 
         return new ResponseEntity<>(
                 AppUtils.buildResponse(

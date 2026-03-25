@@ -16,4 +16,6 @@ public class VerifyAccountResponse {
     private String phoneNumber;
     private String firstName;
     private String lastName;
+    private boolean verified;
+    private boolean isTokenExpired;
 }

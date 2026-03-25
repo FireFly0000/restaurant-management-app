@@ -64,9 +64,9 @@ public class UserEventHandler {
                 SendEmailEvent event =  events.get(i);
                 String eventId = eventIds.get(i);
                 if(!eventSuccessIds.contains(eventId)){
-
+                    _log.info("MY TEMPLATE: {}", event.getTemplateName());
                     Map<String, Object> templateVars = extractMetadata(event);
-                    String renderedHtml = _templateRenderer.render(EmailTemplate.VERIFY_EMAIL, templateVars);
+                    String renderedHtml = _templateRenderer.render(event.getTemplateName(), templateVars);
 
                     EmailPayload payload = EmailPayload.builder()
                             .to(new ArrayList<>(event.getToList()))

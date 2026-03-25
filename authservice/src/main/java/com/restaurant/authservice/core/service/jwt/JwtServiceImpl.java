@@ -3,6 +3,7 @@ package com.restaurant.authservice.core.service.jwt;
 import com.restaurant.authservice.config.AuthServiceProperties;
 import com.restaurant.commons.utils.StringUtils;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -89,6 +90,16 @@ public class JwtServiceImpl implements IJwtService {
     }
 
     @Override
+    public String extractSubjectIgnoreExpiry(String token) {
+        try {
+            return extractClaim(token, Claims::getSubject);
+        } catch (ExpiredJwtException e) {
+            _log.error(e.getMessage(), e.getCause());
+            return e.getClaims().getSubject();
+        }
+    }
+
+    @Override
     public <T> T extractClaim(String token, String key, Class<T> type) {
         return Jwts
                 .parser()
@@ -97,6 +108,17 @@ public class JwtServiceImpl implements IJwtService {
                 .parseSignedClaims(token)
                 .getPayload()
                 .get(key, type);
+    }
+
+    // Add to JwtServiceImpl
+    @Override
+    public <T> T extractClaimIgnoreExpiry(String token, String key, Class<T> type) {
+        try {
+            return extractClaims(token).get(key, type);
+        } catch (ExpiredJwtException e) {
+            _log.error(e.getMessage(), e.getCause());
+            return e.getClaims().get(key, type);
+        }
     }
 
     @Override
@@ -113,7 +135,24 @@ public class JwtServiceImpl implements IJwtService {
         }
     }
 
-    private boolean isTokenExpired(String token){
+    @Override
+    public boolean isValidTokenIgnoreExpiry(String token) {
+        if (!isValidJwtTokenFormat(token)) {
+            return false;
+        }
+        try {
+            extractClaims(token);
+            return true;
+        } catch (ExpiredJwtException e) {
+            return true;
+        } catch (Exception e) {
+            _log.error(e.getMessage(), e.getCause());
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isTokenExpired(String token){
         try{
             return extractClaim(token, Claims::getExpiration).before(new Date());
         }catch(Exception e){

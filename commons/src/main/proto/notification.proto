@@ -33,6 +33,7 @@ message SendEmailEvent {
   repeated string reply_to = 11;
   repeated string cc = 12;
   repeated string bcc = 13;
+  string template_name = 14;
 }
 
 message SendSmsEvent {
