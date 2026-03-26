@@ -3,7 +3,7 @@ package com.restaurant.authservice.core.service.auth;
 import com.restaurant.authservice.core.service.auth.dto.*;
 
 public interface IAuthService {
-    VerifyAccountResponse verifyAccountThroughEmail(VerifyAccountRequest request);
+    VerifyAccountResponse verifyAccount(VerifyAccountRequest request);
     AuthResponse signIn(LoginRequest request);
     SignupResponse signUp(SignupRequest request);
     AuthResponse refreshToken(String refreshToken);

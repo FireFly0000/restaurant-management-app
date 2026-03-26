@@ -1,10 +1,11 @@
 package com.restaurant.notification.core.kafka;
 
 import com.restaurant.commons.constant.Constant;
+import com.restaurant.commons.constant.ContactType;
 import com.restaurant.commons.core.enums.NotiChannel;
 import com.restaurant.commons.core.enums.NotiStatus;
 import com.restaurant.commons.core.enums.NotiType;
-import com.restaurant.commons.core.rpc.notification.SendEmailEvent;
+import com.restaurant.commons.core.rpc.notification.ResendExternalNotificationEvent;
 import com.restaurant.notification.core.service.notification.INotificationService;
 import com.restaurant.notification.core.service.sender.IEmailSender;
 import com.restaurant.notification.core.service.sender.dto.EmailPayload;
@@ -22,14 +23,14 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 @Service
-public class UserEventHandler {
-    private static final Logger _log = LoggerFactory.getLogger(UserEventHandler.class);
+public class ResendNotificationHandler {
+    private static final Logger _log = LoggerFactory.getLogger(ResendNotificationHandler.class);
 
     private final IEmailSender _emailSender;
     private final INotificationService _notificationService;
     private final IEmailTemplateRenderer _templateRenderer;
 
-    public UserEventHandler(
+    public ResendNotificationHandler(
             IEmailSender _emailSender,
             INotificationService _notificationService,
             IEmailTemplateRenderer _templateRenderer
@@ -39,13 +40,53 @@ public class UserEventHandler {
         this._templateRenderer = _templateRenderer;
     }
 
-    @KafkaListener(topics = "user.created.event", containerFactory = "kafkaListenerContainerFactory", concurrency = "${app.notification.kafka.consumer.concurency}")
-    public void handleUserCreatedEvent(List<ConsumerRecord<String, SendEmailEvent>> records, Acknowledgment ack){
-        _log.info("handleUserCreatedEvent, Prepare to send {} email", records.size());
+    @KafkaListener(
+            topics = "notification.external.resend",
+            containerFactory = "kafkaListenerContainerFactory",
+            concurrency = "${app.notification.kafka.consumer.concurency}"
+    )
+    public void handleResendExternalNotificationEvent(
+            List<ConsumerRecord<String, ResendExternalNotificationEvent>> records,
+            Acknowledgment ack
+    ){
+        _log.info("handleResendExternalNotificationEvent, received {} records", records.size());
+        try {
+            List<ConsumerRecord<String, ResendExternalNotificationEvent>> emailRecords = new ArrayList<>();
+            List<ConsumerRecord<String, ResendExternalNotificationEvent>> smsRecords = new ArrayList<>();
+
+            // Split records by contact_type
+            for (ConsumerRecord<String, ResendExternalNotificationEvent> record : records) {
+                ContactType contactType = ContactType.valueOf(record.value().getContactType());
+                switch (contactType) {
+                    case EMAIL -> emailRecords.add(record);
+                    case PHONE -> smsRecords.add(record);
+                }
+            }
+
+            if (!emailRecords.isEmpty()) {
+                resendEmail(emailRecords);
+            }
+
+            if (!smsRecords.isEmpty()) {
+                resendSms(smsRecords);
+            }
+
+            ack.acknowledge();
+
+        } catch (Exception ex) {
+            _log.error("handleResendExternalNotificationEvent, error: {}", ex.getMessage(), ex);
+            throw new RuntimeException("handleResendExternalNotificationEvent failed");
+        }
+    }
+
+    private void resendEmail(
+            List<ConsumerRecord<String, ResendExternalNotificationEvent>> records
+    ){
+        _log.info("resendEmail, Prepare to send {} email", records.size());
         try {
             List<String> eventIds =  new ArrayList<>();
-            List<SendEmailEvent> events = new ArrayList<>();
-            for (ConsumerRecord<String, SendEmailEvent> record : records) {
+            List<ResendExternalNotificationEvent> events = new ArrayList<>();
+            for (ConsumerRecord<String, ResendExternalNotificationEvent> record : records) {
                 Header header = record.headers().lastHeader(Constant.H_EVENT_ID);
 
                 String eventId = header != null
@@ -60,7 +101,7 @@ public class UserEventHandler {
             List<Notification> notifications = new ArrayList<>();
             Set<String> eventSuccessIds = this._notificationService.checkExistNotificationByEventIds(eventIds);
             for(int i = 0; i < events.size(); i++){
-                SendEmailEvent event =  events.get(i);
+                ResendExternalNotificationEvent event =  events.get(i);
                 String eventId = eventIds.get(i);
                 if(!eventSuccessIds.contains(eventId)){
                     _log.info("MY TEMPLATE: {}", event.getTemplateName());
@@ -101,12 +142,9 @@ public class UserEventHandler {
             }
 
             List<Notification> savedNotifications = this._notificationService.saveAll(notifications);
-
             List<SendResult> results = _emailSender.sendBulk(payloads);
-
             this._notificationService.updateNotificationAfterSent(results, savedNotifications);
 
-            ack.acknowledge();
         } catch(Exception ex){
             _log.error("handleUserCreatedEvent, {}", ex.getMessage());
 
@@ -114,8 +152,17 @@ public class UserEventHandler {
         }
     }
 
-    // Convert google.protobuf.Struct metadata → Map<String, Object>
-    private Map<String, Object> extractMetadata(SendEmailEvent event) {
+    private void resendSms(
+            List<ConsumerRecord<String, ResendExternalNotificationEvent>> records
+    ) {
+        _log.info("resendSms, {} SMS records received — not yet implemented", records.size());
+        for (ConsumerRecord<String, ResendExternalNotificationEvent> record : records) {
+            _log.info("resendSms, skipping recipient={}, purpose={}",
+                    record.value().getRecipient(), record.value().getPurpose());
+        }
+    }
+
+    private Map<String, Object> extractMetadata(ResendExternalNotificationEvent event) {
         Map<String, Object> vars = new HashMap<>();
 
         if (event.hasMetadata()) {

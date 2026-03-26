@@ -10,7 +10,9 @@ import com.restaurant.authservice.core.service.jwt.IJwtService;
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.constant.ContactType;
 import com.restaurant.commons.constant.EmailTemplate;
+import com.restaurant.commons.constant.NotificationPurpose;
 import com.restaurant.commons.core.enums.NotiType;
+import com.restaurant.commons.core.rpc.notification.ResendExternalNotificationEvent;
 import com.restaurant.commons.core.rpc.notification.SendEmailEvent;
 import com.restaurant.commons.core.rpc.user.*;
 import com.restaurant.commons.exception.AppException;
@@ -25,6 +27,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements IAuthService {
@@ -183,7 +186,6 @@ public class AuthServiceImpl implements IAuthService {
             }
             _log.info("Registration successful for email: {}", request.getEmail());
 
-           //send email helper call here
             sendVerifyEmail(
                     createdUser.getId(),
                     createdUser.getEmail(),
@@ -215,11 +217,11 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public VerifyAccountResponse verifyAccountThroughEmail(VerifyAccountRequest request) {
+    public VerifyAccountResponse verifyAccount(VerifyAccountRequest request) {
         _log.info("verifyAccountThroughEmail, type={}", request.getType());
 
         if (!_jwtService.isValidTokenIgnoreExpiry(request.getToken())) {
-            _log.warn("verifyAccountThroughEmail, invalid token signature {}", request.getToken());
+            _log.warn("verifyAccount, invalid token signature {}", request.getToken());
             throw new AppException(
                     "auth.verify.token.invalid",
                     Constant.RES3005,
@@ -228,7 +230,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         if (this._blackListService.isBlacklisted(request.getToken())) {
-            _log.warn("verifyAccountThroughEmail, token is blacklisted");
+            _log.warn("verifyAccount, token is blacklisted");
             throw new AppException(
                     "auth.verify.token_invalid",
                     Constant.RES3005,
@@ -237,7 +239,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         if (_jwtService.isTokenExpired(request.getToken())) {
-            _log.info("verifyAccountThroughEmail, token expired, resending new verify token");
+            _log.info("verifyAccount, token expired, resending new verify token");
 
             String userId = _jwtService.extractSubjectIgnoreExpiry(request.getToken());
             String email     = _jwtService.extractClaimIgnoreExpiry(request.getToken(), "email", String.class);
@@ -245,15 +247,18 @@ public class AuthServiceImpl implements IAuthService {
             String lastName  = _jwtService.extractClaimIgnoreExpiry(request.getToken(), "lastName", String.class);
             String phoneNumber = _jwtService.extractClaimIgnoreExpiry(request.getToken(), "phoneNumber", String.class);
 
-            sendVerifyEmail(
-                    userId,
-                    email,
-                    phoneNumber,
-                    firstName,
-                    lastName,
-                    EmailTemplate.RESEND_VERIFY_EMAIL,
-                    request.getType()
-            );
+            switch (request.getType()) {
+                case EMAIL -> resendVerifyEmail(
+                        userId,
+                        email,
+                        phoneNumber,
+                        firstName,
+                        lastName,
+                        request.getType()
+                );
+
+                case PHONE -> _log.info("Need to implement resend verify to phone");
+            }
 
             return VerifyAccountResponse.builder()
                     .type(ContactType.EMAIL)
@@ -273,7 +278,7 @@ public class AuthServiceImpl implements IAuthService {
         try {
             user = _userServiceRpcClient.findById(userId);
         } catch (RpcException rpcEx) {
-            _log.error("verifyAccountThroughEmail, User-service RPC failed during refreshToken. id={}",
+            _log.error("verifyAccount, User-service RPC failed. id={}",
                     userId, rpcEx);
             throw new AppException(
                     "user.service.rpc.error",
@@ -283,7 +288,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         if(!user.getFound()){
-            _log.error("verifyAccountThroughEmail, failed. User with id {} is not found", userId);
+            _log.error("verifyAccount, failed. User with id {} is not found", userId);
             throw new AppException(
                     "auth.verify.user_not_found",
                     Constant.RES3002,
@@ -292,7 +297,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         if (!user.getIsActive() || user.getIsDeleted()) {
-            _log.error("verifyAccountThroughEmail, failed. Invalid token with userId {}", userId);
+            _log.error("verifyAccount, failed. Invalid token with userId {}", userId);
             throw new AppException(
                     "auth.verify.token_invalid",
                     Constant.RES3007,
@@ -301,7 +306,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         if (user.getIsVerified()) {
-            _log.info("verifyAccountThroughEmail, account already verified for userId={}", userId);
+            _log.info("verifyAccount, account already verified for userId={}", userId);
             return VerifyAccountResponse.builder()
                     .type(ContactType.EMAIL)
                     .build();
@@ -315,7 +320,7 @@ public class AuthServiceImpl implements IAuthService {
         try {
            verifiedUser = _userServiceRpcClient.verifyAccount(verifyAccountRpcRequest);
         } catch (RpcException rpcEx) {
-            _log.error("verifyAccountThroughEmail, RPC failed marking email verified for userId={}", userId, rpcEx);
+            _log.error("verifyAccount, RPC failed marking verified for userId={}", userId, rpcEx);
             throw new AppException(
                     "user.service.rpc.error",
                     Constant.RES0007,
@@ -324,7 +329,7 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         if(verifiedUser.getUserNotFound()){
-            _log.error("verifyAccountThroughEmail, failed. User with id {} is not found", userId);
+            _log.error("verifyAccount, failed. User with id {} is not found", userId);
             throw new AppException(
                     "auth.verify.user_not_found",
                     Constant.RES3002,
@@ -332,7 +337,7 @@ public class AuthServiceImpl implements IAuthService {
             );
         }
 
-        _log.info("verifyAccountThroughEmail, successfully verified email for userId={}", userId);
+        _log.info("verifyAccount, successfully verified for userId={}", userId);
 
         return VerifyAccountResponse.builder()
                 .type(ContactType.EMAIL)
@@ -428,7 +433,7 @@ public class AuthServiceImpl implements IAuthService {
             String firstName,
             String lastName,
             String templateName,
-            ContactType type
+            ContactType contactType
     ) {
         FoundUserResponse user;
         try {
@@ -454,6 +459,7 @@ public class AuthServiceImpl implements IAuthService {
         claims.put("firstName", firstName);
         claims.put("lastName", lastName);
         claims.put("type", "VERIFY_EMAIL");
+        claims.put("contactType", contactType);
 
         String verifyToken = _jwtService.generateVerifyAccountToken(
                 userId, claims
@@ -491,5 +497,87 @@ public class AuthServiceImpl implements IAuthService {
         _log.info("signUp, about to send Kafka event for email: {}", email);
         _authEventProducer.pushUserCreatedEvent(userId , emailEvent, new HashMap<>() );
         _log.info("signUp, Kafka event dispatched for email: {}", email);
+    }
+
+    private void resendVerifyEmail(
+            String userId,
+            String email,
+            String phoneNumber,
+            String firstName,
+            String lastName,
+            ContactType contactType
+    ) {
+        // Token generation is verify-specific — belongs here
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", email);
+        claims.put("phoneNumber", phoneNumber != null ? phoneNumber : "");
+        claims.put("firstName", firstName != null ? firstName : "");
+        claims.put("lastName", lastName != null ? lastName : "");
+        claims.put("purpose", NotificationPurpose.RESEND_VERIFY_EMAIL);
+
+        String verifyToken = _jwtService.generateVerifyAccountToken(userId, claims);
+
+        String verifyUrl = UriComponentsBuilder
+                .fromUriString("http://localhost:8081")
+                .path("/api/v1/auth/verify")
+                .queryParam("token", verifyToken)
+                .queryParam("type", ContactType.EMAIL.name())
+                .toUriString();
+
+        Map<String, Value> metadataFields = new HashMap<>();
+        metadataFields.put("firstName", Value.newBuilder()
+                .setStringValue(firstName != null ? firstName : "").build());
+        metadataFields.put("lastName", Value.newBuilder()
+                .setStringValue(lastName != null ? lastName : "").build());
+        metadataFields.put("verifyUrl", Value.newBuilder()
+                .setStringValue(verifyUrl).build());
+
+        Struct metadata = Struct.newBuilder()
+                .putAllFields(metadataFields)
+                .build();
+
+/*        String templateName = switch (purpose) {
+            case VERIFY             -> EmailTemplate.VERIFY_EMAIL;
+            case RESEND_VERIFY_EMAIL -> EmailTemplate.RESEND_VERIFY_EMAIL;
+            default -> throw new IllegalArgumentException("Unsupported purpose: " + purpose);
+        };*/
+
+        ResendExternalNotificationEvent event = ResendExternalNotificationEvent.newBuilder()
+                .setRecipient(email != null ? email : "")
+                .setRecipientId(userId)
+                .setUserId(userId)
+                .setContactType(contactType.name())
+                .setPurpose(NotificationPurpose.RESEND_VERIFY_EMAIL.name())
+                .addTo(email != null ? email : "")
+                .setSubject(getEmailSubject(NotificationPurpose.RESEND_VERIFY_EMAIL))
+                .setFrom("no-reply@restaurant.com")
+                .setTemplateName(EmailTemplate.RESEND_VERIFY_EMAIL)
+                .setMetadata(metadata)
+                .setType(NotiType.SYSTEM.name())
+                .build();
+
+        pushResendExternalNotificationEvent(event);
+    }
+
+    private void pushResendExternalNotificationEvent(
+            ResendExternalNotificationEvent event
+    ) {
+        _log.info("pushResendExternalNotificationEvent, userId={}, contactType={}, purpose={}",
+                event.getUserId(), event.getContactType(), event.getPurpose());
+
+        String eventId = UUID.randomUUID().toString();
+        Map<String, String> headers = new HashMap<>();
+        headers.put(Constant.H_EVENT_ID, eventId);
+
+        _authEventProducer.pushResendExternalNotificationEvent(event.getUserId(), event, headers);
+        _log.info("sendExternalVerifyNotification, event pushed userId={}", event.getUserId());
+    }
+
+    private String getEmailSubject(NotificationPurpose purpose) {
+        return switch (purpose) {
+            case VERIFY         -> "Please verify your account!";
+            case RESEND_VERIFY_EMAIL  -> "New verification link";
+            case RESET_PASSWORD -> "Reset your password";
+        };
     }
 }

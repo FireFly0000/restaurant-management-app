@@ -2,6 +2,7 @@ package com.restaurant.authservice.core.kafka;
 
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.constant.KafkaTopic;
+import com.restaurant.commons.core.rpc.notification.ResendExternalNotificationEvent;
 import com.restaurant.commons.core.rpc.notification.SendEmailEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,5 +27,17 @@ public class KafkaProducer {
 
         _producer.sendMessage(KafkaTopic.USER_CREATED, key, event, headers);
         _log.info("pushUserCreatedEvent, Pushed event");
+    }
+
+    public void pushResendExternalNotificationEvent(
+            String key,
+            ResendExternalNotificationEvent event,
+            Map<String, String> headers
+    ){
+        headers.putIfAbsent(Constant.H_EVENT_ID, UUID.randomUUID().toString());
+        _log.info("pushResendExternalNotificationEvent, EventId: {}", headers.get(Constant.H_EVENT_ID));
+
+        _producer.sendMessage(KafkaTopic.RESEND_EXTERNAL_NOTIFICATION, key, event, headers);
+        _log.info("pushResendExternalNotificationEvent, Pushed event");
     }
 }
