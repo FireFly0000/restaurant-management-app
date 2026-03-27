@@ -4,6 +4,7 @@ import com.restaurant.authservice.core.service.auth.dto.*;
 
 public interface IAuthService {
     VerifyAccountResponse verifyAccount(VerifyAccountRequest request);
+    ResendResponse resend(ResendRequest request);
     AuthResponse signIn(LoginRequest request);
     SignupResponse signUp(SignupRequest request);
     AuthResponse refreshToken(String refreshToken);

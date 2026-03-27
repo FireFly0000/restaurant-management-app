@@ -16,7 +16,6 @@ import com.restaurant.commons.core.rpc.notification.ResendExternalNotificationEv
 import com.restaurant.commons.core.rpc.notification.SendEmailEvent;
 import com.restaurant.commons.core.rpc.user.*;
 import com.restaurant.commons.exception.AppException;
-import io.jsonwebtoken.Claims;
 import org.apache.dubbo.rpc.RpcException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -217,6 +216,67 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
+    public ResendResponse resend(ResendRequest request) {
+        _log.info("resend, contactType={}, purpose={}", request.getContactType(), request.getPurpose());
+
+        switch (request.getContactType()) {
+            case EMAIL -> resendToEmail(request);
+            case PHONE -> resendToPhone(request);  // future
+        }
+
+        return ResendResponse.builder()
+                .contactType(request.getContactType())
+                .identifier(request.getIdentifier())
+                .purpose(request.getPurpose())
+                .build();
+    }
+
+    private void resendToEmail(ResendRequest request) {
+        FoundUserResponse user;
+        try {
+            user = _userServiceRpcClient.findByEmail(request.getIdentifier());
+        } catch (RpcException rpcEx) {
+            _log.error("resendToEmail, RPC failed for email={}", request.getIdentifier(), rpcEx);
+            throw new AppException(
+                    "user.service.rpc.error",
+                    Constant.RES0007,
+                    HttpStatus.SERVICE_UNAVAILABLE.name()
+            );
+        }
+
+        // Security: always return true even if user not found
+        if (!user.getFound() || !user.getIsActive() || user.getIsDeleted()) {
+            _log.warn("resendToEmail, user not found or inactive, returning silently");
+            return;
+        }
+
+        switch (request.getPurpose()) {
+            case VERIFY, RESEND_VERIFY_EMAIL -> {
+                if (user.getIsVerified()) {
+                    _log.info("resendToEmail, already verified, skipping");
+                    return;
+                }
+                resendVerifyEmail(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        ContactType.EMAIL
+                );
+            }
+            case RESET_PASSWORD -> {
+                // future: sendResetPasswordEmail(...)
+                _log.info("resendToEmail, RESET_PASSWORD not yet implemented");
+            }
+        }
+    }
+
+    private void resendToPhone(ResendRequest request) {
+        // future: OTP via SMS
+        _log.info("resendToPhone, not yet implemented for identifier={}", request.getIdentifier());
+    }
+
+    @Override
     public VerifyAccountResponse verifyAccount(VerifyAccountRequest request) {
         _log.info("verifyAccountThroughEmail, type={}", request.getType());
 
@@ -239,36 +299,21 @@ public class AuthServiceImpl implements IAuthService {
         }
 
         if (_jwtService.isTokenExpired(request.getToken())) {
-            _log.info("verifyAccount, token expired, resending new verify token");
+            _log.info("verifyAccount, token expired, need to resend new verify url");
 
-            String userId = _jwtService.extractSubjectIgnoreExpiry(request.getToken());
-            String email     = _jwtService.extractClaimIgnoreExpiry(request.getToken(), "email", String.class);
-            String firstName = _jwtService.extractClaimIgnoreExpiry(request.getToken(), "firstName", String.class);
-            String lastName  = _jwtService.extractClaimIgnoreExpiry(request.getToken(), "lastName", String.class);
-            String phoneNumber = _jwtService.extractClaimIgnoreExpiry(request.getToken(), "phoneNumber", String.class);
+            // extract info from expired token to return to FE
+            String email = _jwtService.extractClaimIgnoreExpiry(request.getToken(), "email", String.class);
 
-            switch (request.getType()) {
-                case EMAIL -> resendVerifyEmail(
-                        userId,
-                        email,
-                        phoneNumber,
-                        firstName,
-                        lastName,
-                        request.getType()
-                );
+            Map<String, String> data = new HashMap<>();
+            data.put("email", email);
+            data.put("contactType", request.getType().name());
 
-                case PHONE -> _log.info("Need to implement resend verify to phone");
-            }
-
-            return VerifyAccountResponse.builder()
-                    .type(ContactType.EMAIL)
-                    .email(email)
-                    .firstName(firstName)
-                    .lastName(lastName)
-                    .phoneNumber(phoneNumber)
-                    .verified(false)
-                    .isTokenExpired(true)
-                    .build();
+            throw new AppException(
+                    "auth.verify.token_expired",
+                    Constant.RES3005,
+                    HttpStatus.GONE.name(),
+                    data
+            );
         }
 
         String userId = _jwtService.extractSubject(request.getToken());
@@ -502,7 +547,6 @@ public class AuthServiceImpl implements IAuthService {
     private void resendVerifyEmail(
             String userId,
             String email,
-            String phoneNumber,
             String firstName,
             String lastName,
             ContactType contactType
@@ -510,7 +554,6 @@ public class AuthServiceImpl implements IAuthService {
         // Token generation is verify-specific — belongs here
         Map<String, Object> claims = new HashMap<>();
         claims.put("email", email);
-        claims.put("phoneNumber", phoneNumber != null ? phoneNumber : "");
         claims.put("firstName", firstName != null ? firstName : "");
         claims.put("lastName", lastName != null ? lastName : "");
         claims.put("purpose", NotificationPurpose.RESEND_VERIFY_EMAIL);

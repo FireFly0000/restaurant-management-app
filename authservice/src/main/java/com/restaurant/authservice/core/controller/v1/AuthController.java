@@ -74,6 +74,22 @@ public class AuthController {
         );
     }
 
+    @PostMapping("/resend")
+    public ResponseEntity<?> resend(@RequestBody @Valid ResendRequest request){
+        _log.info("resend, request received contactType={}, purpose={}",
+                request.getContactType(), request.getPurpose());
+
+        ResendResponse result = _authService.resend(request);
+        return new ResponseEntity<>(
+                AppUtils.buildResponse(
+                        Utils.getMessage("auth.resend.success"),
+                        result,
+                        null
+                ),
+                HttpStatus.OK
+        );
+    }
+
     @PostMapping("/sign-in")
     public ResponseEntity<?> signIn(@RequestBody @Valid LoginRequest request) {
         _log.info("signIn, Sign in for user with email: {}", request.getEmail());

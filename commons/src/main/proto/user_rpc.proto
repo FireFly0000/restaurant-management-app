@@ -96,6 +96,7 @@ message FoundUserResponse {
     bool is_verified = 9;
     bool is_deleted = 10;
     bool found = 11;
+    string phone_number = 12;
 }
 
 message VerifyAccountRpcResponse {
