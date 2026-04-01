@@ -1,8 +1,9 @@
-package com.restaurant.userservice.core.service.useroutbox;
+package com.restaurant.businessservice.core.service.outbox;
 
+import com.restaurant.businessservice.config.BusinessProperties;
+import com.restaurant.businessservice.core.repository.IBusinessOutboxRepository;
+import com.restaurant.businessservice.model.BusinessOutBox;
 import com.restaurant.commons.core.enums.OutboxStatus;
-import com.restaurant.userservice.config.UserProperties;
-import com.restaurant.userservice.core.repository.IUserOutboxRepository;
 import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,33 +22,33 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
-public class UserOutboxWorker {
-    private static final Logger _log = LoggerFactory.getLogger(UserOutboxWorker.class);
+public class BusinessOutboxWorker {
+    private static final Logger _log = LoggerFactory.getLogger(BusinessOutboxWorker.class);
 
     private final ThreadPoolTaskExecutor _executor;
-    private final UserOutboxProcessor _processor;
-    private final UserProperties _userProperties;
+    private final BusinessOutboxProcessor _processor;
+    private final BusinessProperties _businessProperties;
     private final TransactionTemplate _transTemplate;
-    private final IUserOutboxRepository _repo;
+    private final IBusinessOutboxRepository _repo;
     private final AtomicBoolean _isShuttingDown = new AtomicBoolean(false);
 
-    public UserOutboxWorker(
-            @Qualifier("userOutboxExecutor") ThreadPoolTaskExecutor executor,
-            UserOutboxProcessor processor,
-            UserProperties userProperties,
+    public BusinessOutboxWorker(
+            @Qualifier("businessOutboxExecutor") ThreadPoolTaskExecutor executor,
+            BusinessOutboxProcessor processor,
+            BusinessProperties businessProperties,
             TransactionTemplate transTemplate,
-            IUserOutboxRepository repo
+            IBusinessOutboxRepository repo
     ) {
         this._executor = executor;
         this._processor = processor;
-        this._userProperties = userProperties;
+        this._businessProperties = businessProperties;
         this._transTemplate = transTemplate;
         this._repo = repo;
     }
 
     @PreDestroy
     public void onShutdown() {
-        _log.warn("onShutdown, Shutting down UserOutboxWorker");
+        _log.warn("onShutdown, Shutting down BusinessOutboxWorker");
         this._isShuttingDown.set(true);
     }
 
@@ -59,16 +60,18 @@ public class UserOutboxWorker {
         }
 
         try {
-            List<UUID> messageIds = this._transTemplate.execute(trans -> {
+            // Claim only ids first so the scheduler does not pull the whole payload batch into memory.
+            List<UUID> messageIds = this._transTemplate.execute(trans ->
+            {
                 List<UUID> claimedMessageIds =
-                        this._repo.findBatchIdsToProcess(this._userProperties.getOutbox().getBatchSize());
+                        this._repo.findBatchIdsToProcess(this._businessProperties.getOutbox().getBatchSize());
 
                 if (claimedMessageIds == null || claimedMessageIds.isEmpty()) {
                     return claimedMessageIds;
                 }
 
                 Instant leaseUntil = Instant.now()
-                        .plusSeconds(this._userProperties.getOutbox().getLeaseSeconds());
+                        .plusSeconds(this._businessProperties.getOutbox().getLeaseSeconds());
                 this._repo.claimBatch(claimedMessageIds, OutboxStatus.PROCESSING.name(), leaseUntil);
                 return claimedMessageIds;
             });
@@ -88,12 +91,12 @@ public class UserOutboxWorker {
                     .toList();
 
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                    .get(this._userProperties.getOutbox().getBatchTimeoutSeconds(), TimeUnit.SECONDS);
+                    .get(this._businessProperties.getOutbox().getBatchTimeoutSeconds(), TimeUnit.SECONDS);
             _log.info("schedulePush, Completed processing {} outbox messages", messageIds.size());
         } catch (TimeoutException ex) {
-            _log.error("schedulePush, User outbox batch processing timed out", ex);
+            _log.error("schedulePush, Business outbox batch processing timed out", ex);
         } catch (Exception ex) {
-            _log.error("schedulePush, Failed to process user outbox batch", ex);
+            _log.error("schedulePush, Failed to process business outbox batch", ex);
         }
     }
 

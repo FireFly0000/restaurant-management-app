@@ -1,4 +1,4 @@
-/*package com.restaurant.commons.utils;
+package com.restaurant.commons.utils;
 
 import com.restaurant.commons.core.rpc.storage.FileMetadata;
 
@@ -23,4 +23,4 @@ public class FileUtils {
             return null;
         }
     }
-}*/
+}

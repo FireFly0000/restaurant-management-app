@@ -1,9 +1,9 @@
 package com.restaurant.commons.core.enums;
 
-public enum OutboxStatus {
+public enum InboxStatus {
     PENDING,
     PROCESSING,
-    SENT,
+    PROCESSED,
     RETRY,
-    FAILED,
+    FAILED
 }

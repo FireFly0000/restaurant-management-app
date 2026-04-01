@@ -70,10 +70,11 @@ spring:
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
+      value-serializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
       acks: all
       retries: 0
       properties:
+        schema.registry.url: ${SCHEMA_REGISTRY_HOST:http://localhost}:${SCHEMA_REGISTRY_PORT:8081}
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
         retry.backoff.ms: 1000
@@ -88,10 +89,11 @@ spring:
       group-id: user-service-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+      value-deserializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer
       enable-auto-commit: false
       properties:
-        spring.json.trusted.packages: com.restaurant.*
+        schema.registry.url: ${SCHEMA_REGISTRY_HOST:http://localhost}:${SCHEMA_REGISTRY_PORT:8081}
+        derive.type: true
         max.poll.records: 100
         max.poll.interval.ms: 300000
         session.timeout.ms: 45000
@@ -195,5 +197,15 @@ app:
       queue-capacity: 100
       thread-name-prefix: "UserOutboxWorker-"
       batch-size: 50
-      max_retries: 3
+      max-retries: 3
+      lease-seconds: 30
+      batch-timeout-seconds: 30
+    inbox:
+      batch-size: 50
+      max-retries: 3
+      lease-seconds: 30
+      core-pool-size: 4
+      max-pool-size: 8
+      queue-capacity: 200
+      thread-name-prefix: "UserInboxWorker-"
 

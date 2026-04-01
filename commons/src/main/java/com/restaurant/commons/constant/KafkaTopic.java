@@ -7,4 +7,8 @@ public class KafkaTopic {
 
     // Storage Service
     public static final String FILE_CLEANUP = "storage.file-cleanup";
+
+    // Business Service
+    public static final String LOCATION_MANAGER_UPDATED = "business.location-manager.updated";
+    public static final String LOCATION_MANAGER_UPDATE_FAILED = "business.location-manager.update-failed";
 }

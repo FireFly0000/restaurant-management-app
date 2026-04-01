@@ -1,11 +1,11 @@
-package com.restaurant.userservice.core.service.useroutbox;
+package com.restaurant.businessservice.core.service.outbox;
 
+import com.restaurant.businessservice.config.BusinessProperties;
+import com.restaurant.businessservice.core.repository.IBusinessOutboxRepository;
+import com.restaurant.businessservice.model.BusinessOutBox;
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.core.enums.OutboxStatus;
 import com.restaurant.commons.exception.AppException;
-import com.restaurant.userservice.config.UserProperties;
-import com.restaurant.userservice.core.repository.IUserOutboxRepository;
-import com.restaurant.userservice.model.UserOutBox;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,27 +24,27 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 @Service
-public class UserOutboxProcessor {
-    private static final Logger _log = LoggerFactory.getLogger(UserOutboxProcessor.class);
+public class BusinessOutboxProcessor {
+    private static final Logger _log = LoggerFactory.getLogger(BusinessOutboxProcessor.class);
 
-    private final IUserOutboxRepository _repo;
+    private final IBusinessOutboxRepository _repo;
     private final KafkaTemplate<String, byte[]> _outboxKafkaTemplate;
-    private final UserProperties _userProperties;
+    private final BusinessProperties _businessProperties;
 
-    public UserOutboxProcessor(
-            IUserOutboxRepository repo,
+    public BusinessOutboxProcessor(
+            IBusinessOutboxRepository repo,
             @Qualifier("outboxKafkaTemplate") KafkaTemplate<String, byte[]> outboxKafkaTemplate,
-            UserProperties userProperties
+            BusinessProperties businessProperties
     ) {
         this._repo = repo;
         this._outboxKafkaTemplate = outboxKafkaTemplate;
-        this._userProperties = userProperties;
+        this._businessProperties = businessProperties;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processMessage(UUID messageId) {
         _log.info("processMessage, Start process outbox message id = {}", messageId);
-        UserOutBox entity = this._repo.findById(messageId)
+        BusinessOutBox entity = this._repo.findById(messageId)
                 .orElseThrow(() -> {
                     _log.error("processMessage, Outbox message not found with id = {}", messageId);
                     return new AppException("Outbox message not found", Constant.RES3001, "400");
@@ -70,14 +70,14 @@ public class UserOutboxProcessor {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleFailure(UUID messageId, Throwable ex) {
         _log.warn("handleFailure, Start update failed state for message id = {}", messageId);
-        UserOutBox entity = this._repo.findById(messageId).orElse(null);
+        BusinessOutBox entity = this._repo.findById(messageId).orElse(null);
         if (entity == null || entity.getStatus() == OutboxStatus.SENT) {
             _log.warn("handleFailure, Skip update for message id = {}", messageId);
             return;
         }
 
         int currentRetry = entity.getRetry() == null ? 0 : entity.getRetry();
-        int maxRetries = this._userProperties.getOutbox().getMaxRetries();
+        int maxRetries = this._businessProperties.getOutbox().getMaxRetries();
 
         if (currentRetry >= maxRetries) {
             entity.setStatus(OutboxStatus.FAILED);
@@ -124,7 +124,7 @@ public class UserOutboxProcessor {
         }
     }
 
-    private String resolveEventId(UserOutBox entity) {
+    private String resolveEventId(BusinessOutBox entity) {
         if (entity.getEventId() == null || entity.getEventId().isBlank()) {
             entity.setEventId(UUID.randomUUID().toString());
         }
