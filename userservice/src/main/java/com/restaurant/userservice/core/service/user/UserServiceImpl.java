@@ -9,11 +9,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements IUserService {
@@ -102,6 +100,17 @@ public class UserServiceImpl implements IUserService {
         }
         _log.warn("The user is null");
         return null;
+    }
+
+    @Override
+    public List<User> saveAll(List<User> entities) {
+        if (CollectionUtils.isEmpty(entities)) {
+            _log.warn("saveAll, User list is empty");
+            return new ArrayList<>();
+        }
+        List<User> savedUsers = _repo.saveAll(entities);
+        _log.info("saveAll, Saved {} users", savedUsers.size());
+        return savedUsers;
     }
 
     @Override

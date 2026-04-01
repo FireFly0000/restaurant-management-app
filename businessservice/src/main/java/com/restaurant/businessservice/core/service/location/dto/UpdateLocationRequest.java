@@ -9,12 +9,10 @@ import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDateTime;
 
-@Setter
 @Getter
+@Setter
 @AllArgsConstructor
-public class CreateLocationRequest {
-    @NotBlank(message = "{location.business_id.not-blank}")
-    private String businessId;
+public class UpdateLocationRequest {
     @NotBlank(message = "{location.branch_name.not-blank}")
     @Length(min = 3, max = 225, message = "{location.branch_name.length}")
     private String branchName;
@@ -24,15 +22,10 @@ public class CreateLocationRequest {
     @NotBlank(message = "{location.email.not-blank}")
     @Email(message = "{location.email.invalid}")
     private String email;
-    private String managerId;
-
     @NotNull(message = "{location.start_date.not-null}")
     @FutureOrPresent(message = "{location.start_date.future}")
     private LocalDateTime startDate;
     @NotBlank(message = "{location.address.not-blank}")
     @Length(min = 3, max = 225, message = "{location.address.length}")
     private String address;
-    @Valid
-    @NotNull(message = "{location.location_setting.not-null}")
-    private CreateLocationSettingRequest locationSetting;
 }

@@ -14,4 +14,13 @@ public interface IBusinessLocationRepository extends JpaRepository<Location, UUI
 
     @Query("SELECT l FROM Location l WHERE l.id = :id AND l.deletedAt = 0")
     Optional<Location> getLocationById(UUID id);
+
+    @Query("""
+        SELECT CASE WHEN COUNT(l) > 0 THEN true ELSE false END
+        FROM Location l
+        WHERE l.managerId = :managerId
+          AND l.id <> :excludedLocationId
+          AND l.deletedAt = 0
+    """)
+    boolean existsOtherLocationByManagerId(UUID managerId, UUID excludedLocationId);
 }
