@@ -4,9 +4,8 @@
 <h1>
     Hi <span th:text="${firstName + ' ' + lastName}">User</span>,
 </h1>
-<p>Please verify your email address by clicking the link below:</p>
+<p>You requested a new verification link. Click below to verify your email:</p>
 <a th:href="${verifyUrl}">Verify Email</a>
-<p>If you did not create an account, please ignore this email.</p>
 <p>This link will expire in 15 minutes.</p>
 </body>
 </html>

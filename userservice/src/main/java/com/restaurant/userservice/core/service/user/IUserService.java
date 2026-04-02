@@ -23,4 +23,5 @@ public interface IUserService {
     List<User> getActivedUser(int page, int size, String sort, String sortDirection);
     List<User> getAllUser(int page, int size, String sort, String sortDirection);
     List<User> getUsersByIds(List<UUID> ids);
+    User verifyAccount(UUID id);
 }

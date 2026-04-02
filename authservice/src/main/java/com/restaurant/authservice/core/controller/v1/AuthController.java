@@ -1,6 +1,8 @@
 package com.restaurant.authservice.core.controller.v1;
 
 import com.restaurant.authservice.core.service.auth.IAuthService;
+import com.restaurant.authservice.core.service.auth.dto.VerifyAccountRequest;
+import com.restaurant.authservice.core.service.auth.dto.VerifyAccountResponse;
 import com.restaurant.authservice.core.service.auth.dto.*;
 import com.restaurant.authservice.utils.Utils;
 import com.restaurant.commons.constant.Constant;
@@ -41,6 +43,51 @@ public class AuthController {
                     ),
                     HttpStatus.CREATED
                 );
+    }
+
+    @GetMapping("/verify")
+    public ResponseEntity<?> verify(@Valid @ModelAttribute VerifyAccountRequest request) {
+        _log.info("verifyContact, request received for type={}", request.getType());
+
+        String successMsg = Utils.getMessage("auth.verify.success");
+        String expiredMsg = Utils.getMessage("auth.verify.token_expired");
+        VerifyAccountResponse result = _authService.verifyAccount(request);
+
+        if(result.isTokenExpired()){
+            return new ResponseEntity<>(
+                    AppUtils.buildResponse(
+                            expiredMsg,
+                            result,
+                            null
+                    ),
+                    HttpStatus.OK
+            );
+        }
+
+        return new ResponseEntity<>(
+                AppUtils.buildResponse(
+                        successMsg,
+                        result,
+                        null
+                ),
+                HttpStatus.OK
+        );
+    }
+
+    @PostMapping("/resend")
+    public ResponseEntity<?> resend(@RequestBody @Valid ResendRequest request){
+        _log.info("resend, request received contactType={}, purpose={}",
+                request.getContactType(), request.getPurpose());
+
+        ResendResponse result = _authService.resend(request);
+        return new ResponseEntity<>(
+                AppUtils.buildResponse(
+                        Utils.getMessage("auth.resend.success"),
+                        result,
+                        null
+                ),
+                HttpStatus.OK
+        );
     }
 
     @PostMapping("/sign-in")

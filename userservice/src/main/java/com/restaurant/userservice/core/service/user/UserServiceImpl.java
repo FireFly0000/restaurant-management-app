@@ -1,10 +1,13 @@
 package com.restaurant.userservice.core.service.user;
 
+import com.restaurant.commons.constant.Constant;
+import com.restaurant.commons.exception.AppException;
 import com.restaurant.userservice.core.repository.IUserRepository;
 import com.restaurant.userservice.core.service.user.dto.UpdateUserRequest;
 import com.restaurant.userservice.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -129,5 +132,17 @@ public class UserServiceImpl implements IUserService {
             return new ArrayList<>();
         }
         return _repo.getUsersByIds(ids);
+    }
+
+    @Override
+    public User verifyAccount(UUID id) {
+        User user = findById(id);
+
+        if (user == null) {
+            return null;
+        }
+
+        user.setIsVerified(true);
+        return save(user);
     }
 }

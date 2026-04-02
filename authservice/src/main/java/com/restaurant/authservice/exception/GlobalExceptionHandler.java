@@ -40,6 +40,7 @@ public class GlobalExceptionHandler {
                 .message(msg)
                 .httpStatus(ex.getHttpStatus())
                 .errorCode(ex.getErrorCode())
+                .data(ex.getData())
                 .build();
     }
 
