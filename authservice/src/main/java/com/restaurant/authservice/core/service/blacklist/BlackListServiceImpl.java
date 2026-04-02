@@ -2,6 +2,7 @@ package com.restaurant.authservice.core.service.blacklist;
 
 import com.restaurant.authservice.config.AuthServiceProperties;
 import com.restaurant.authservice.core.service.jwt.IJwtService;
+import com.restaurant.authservice.core.service.jwt.JwtServiceImpl;
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.core.interfaces.ICacheService;
 import org.slf4j.Logger;
@@ -15,42 +16,42 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 public class BlackListServiceImpl implements IBackListService {
-    private final String blacklistPrefix;
-    private final ICacheService cacheService;
-    private final IJwtService jwtService;
+    private final String _blacklistPrefix;
+    private final ICacheService _cacheService;
+    private final IJwtService _jwtService;
 
     private final Logger _log = LoggerFactory.getLogger(BlackListServiceImpl.class);
 
     public BlackListServiceImpl(
             @Qualifier("redisService") ICacheService cacheService,
             AuthServiceProperties _properties,
-            IJwtService jwtService
+            JwtServiceImpl jwtService
     ) {
-        this.blacklistPrefix = _properties.getBlacklist().getPrefix();
-        this.cacheService = cacheService;
-        this.jwtService = jwtService;
+        this._blacklistPrefix = _properties.getBlacklist().getPrefix();
+        this._cacheService = cacheService;
+        this._jwtService = jwtService;
     }
 
     @Override
     public boolean isBlacklisted(String token) {
-        return cacheService.hasKey(this.blacklistPrefix + token);
+        return _cacheService.hasKey(this._blacklistPrefix + token);
     }
 
     @Override
     public void blacklistToken(String token) {
-        cacheService.setWithTTL(
-                this.blacklistPrefix + token,
+        _cacheService.setWithTTL(
+                this._blacklistPrefix + token,
                 true,
-                jwtService.getTokenTtlSeconds(token),
+                _jwtService.getTokenTtlSeconds(token),
                 TimeUnit.SECONDS
         );
 
-        String userId = jwtService.extractSubject(token);
-        long ttl = jwtService.getTokenTtlSeconds(token);
-        Date expiration = jwtService.extractClaim(token, Constant.EXPIRATION, Date.class);
+        UUID userId = _jwtService.extractClaim(token, Constant.USER_ID, UUID.class);
+        long ttl = _jwtService.getTokenTtlSeconds(token);
+        Date expiration = _jwtService.extractClaim(token, Constant.EXPIRATION, Date.class);
 
         _log.info(
-                "blacklistToken, JWT added to blacklist. userId={}, expiresAt={}, ttlSeconds={}",
+                "JWT added to blacklist. userId={}, expiresAt={}, ttlSeconds={}",
                 userId,
                 expiration,
                 ttl

@@ -1,13 +1,11 @@
 package com.restaurant.businessservice.core.service.business;
 
-import com.restaurant.businessservice.core.service.business.dto.CreateBusinessRequest;
-import com.restaurant.businessservice.core.service.business.dto.UpdateBusinessRequest;
-import com.restaurant.businessservice.core.service.business.dto.UploadFileRequest;
+import com.restaurant.businessservice.core.service.business.dto.*;
 import com.restaurant.businessservice.model.Business;
+import org.springframework.data.domain.Page;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 public interface IBusinessService {
@@ -20,8 +18,12 @@ public interface IBusinessService {
     Business update(UUID id, UpdateBusinessRequest request);
     Boolean active(UUID id);
     Boolean inactive(UUID id);
+    Boolean delete(UUID id);
     String updateCoverImage(UUID id, UploadFileRequest request);
     String updateAvatar(UUID id, UploadFileRequest request);
+
+    Page<Business> getListBusinesses(BusinessFilter filter);
+    BusinessResponse getBusinessById(UUID id);
 
     Business save(Business entity);
     List<Business> saveAll(Collection<Business> entities);

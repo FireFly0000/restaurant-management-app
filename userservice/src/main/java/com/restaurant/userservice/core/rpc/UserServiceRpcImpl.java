@@ -1,8 +1,6 @@
 package com.restaurant.userservice.core.rpc;
 
-import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.core.enums.UserType;
-import com.restaurant.commons.exception.AppException;
 import com.restaurant.userservice.core.service.user.IUserService;
 import com.restaurant.commons.core.rpc.user.*;
 import com.restaurant.userservice.model.User;
@@ -11,9 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @DubboService(
@@ -52,6 +50,24 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
                     .build();
         } catch (Exception e){
             _log.error("RPC: checked phone number exists failed", e);
+            throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
+        }
+    }
+
+    @Override
+    public GetUsersByIdsResponse getUsersByIds(GetUsersByIdsRequest request) {
+        try{
+            _log.info("getUsersByIds, Start get users by Ids");
+            List<UUID> ids = request.getIdsList().stream().map(UUID::fromString).toList();
+            List<User> users = _userService.getUsersByIds(ids);
+            List<UserRpcResponse> usersReponse = users.stream().map(this::buildUserRpcResponse).toList();
+
+            return GetUsersByIdsResponse.newBuilder()
+                    .addAllUsers(usersReponse)
+                    .build();
+
+        }catch (Exception e){
+            _log.error("getUsersByIds, get users failed: {}", e.getMessage());
             throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
         }
     }
@@ -96,7 +112,7 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
                     .setLastName(findByEmailUser.getLastName())
                     .setAvatarUrl(
                             findByEmailUser.getAvatarUrl() != null
-                            ? findByEmailUser.getAvatarUrl() : ""
+                                    ? findByEmailUser.getAvatarUrl() : ""
                     )
                     .setUserType(findByEmailUser.getUserType().toString())
                     .setIsActive(findByEmailUser.getIsActive())
@@ -146,6 +162,36 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
         }
     }
 
+    @Override
+    public VerifyAccountRpcResponse verifyAccount(VerifyAccountRpcRequest request) {
+        try {
+            _log.info("RPC verifyAccount, userId={}", request.getId());
+
+            UUID userId = UUID.fromString(request.getId());
+            User user = _userService.verifyAccount(userId);
+
+            if (user == null) {
+                _log.warn("RPC verifyAccount, user not found for userId={}", request.getId());
+                return VerifyAccountRpcResponse.newBuilder()
+                        .setUserNotFound(true)
+                        .build();
+            }
+
+            return VerifyAccountRpcResponse.newBuilder()
+                    .setId(user.getId().toString())
+                    .setEmail(user.getEmail() != null ? user.getEmail() : "")
+                    .setFirstName(user.getFirstName() != null ? user.getFirstName() : "")
+                    .setLastName(user.getLastName() != null ? user.getLastName() : "")
+                    .setPhoneNumber(user.getPhoneNumber() != null ? user.getPhoneNumber() : "")
+                    .setUserNotFound(false)
+                    .build();
+
+        } catch (Exception e) {
+            _log.error("RPC verifyAccount failed for userId={}", request.getId(), e);
+            throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
+        }
+    }
+
     private User buildUserFromRequest(CreateUserRequest request) {
         User user = new User();
         user.setEmail(request.getEmail());
@@ -159,5 +205,18 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
         user.setIsDeleted(false);
         user.setUserType(UserType.CUSTOMER);
         return user;
+    }
+
+    private UserRpcResponse buildUserRpcResponse(User user) {
+        return UserRpcResponse.newBuilder()
+                .setId(user.getId().toString())
+                .setFirstName(user.getFirstName())
+                .setLastName(user.getLastName())
+                .setEmail(user.getEmail())
+                .setAvatarUrl(user.getAvatarUrl())
+                .setBirthDate(user.getBirthDate().toString())
+                .setPhoneNumber(user.getPhoneNumber())
+                .setUserType(user.getUserType().name())
+                .build();
     }
 }

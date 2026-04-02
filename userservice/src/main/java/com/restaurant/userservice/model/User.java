@@ -36,6 +36,7 @@ public class User extends BaseEntity {
     private String avatarUrl;
     private Boolean isActive;
     private Boolean isVerified;
+    private Boolean isDeleted;
 
     @PrePersist
     private void prePersist(){

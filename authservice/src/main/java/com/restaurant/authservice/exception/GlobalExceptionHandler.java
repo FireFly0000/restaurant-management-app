@@ -27,6 +27,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AppException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiErrorResponse appExceptionHandler(AppException ex){
         _log.warn(ex.getMessage());
         String msg = _messageSource.getMessage(
@@ -39,10 +40,12 @@ public class GlobalExceptionHandler {
                 .message(msg)
                 .httpStatus(ex.getHttpStatus())
                 .errorCode(ex.getErrorCode())
+                .data(ex.getData())
                 .build();
     }
 
     @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiErrorResponse exceptionHandler(Exception ex){
         _log.error(ex.getMessage(), ex.getCause());
         return ApiErrorResponse.builder()

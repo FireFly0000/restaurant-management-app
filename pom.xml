@@ -23,6 +23,7 @@
         <module>userservice</module>
         <module>authservice</module>
         <module>notificationservice</module>
+        <module>storageservice</module>
     </modules>
 
     <properties>
@@ -54,6 +55,9 @@
         <postgresql.version>42.7.8</postgresql.version>
         <lombok.version>1.18.42</lombok.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
+
+        <!-- AWS SDK -->
+        <awssdk-s3.version>2.42.8</awssdk-s3.version>
     </properties>
 
     <repositories>
@@ -184,6 +188,12 @@
                 <artifactId>kafka-protobuf-serializer</artifactId>
                 <version>${kafka-protobuf-serializer.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>s3</artifactId>
+                <version>${awssdk-s3.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -256,26 +266,6 @@
                     <groupId>org.xolstice.maven.plugins</groupId>
                     <artifactId>protobuf-maven-plugin</artifactId>
                     <version>${protobuf-maven-plugin.version}</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>3.6.0</version>
-                    <executions>
-                        <execution>
-                            <id>add-protobuf-sources</id>
-                            <phase>generate-sources</phase>
-                            <goals>
-                                <goal>add-source</goal>
-                            </goals>
-                            <configuration>
-                                <sources>
-                                    <source>${project.build.directory}/generated-sources/protobuf/java</source>
-                                </sources>
-                            </configuration>
-                        </execution>
-                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><configuration><source>21</source><target>21</target></configuration></plugin></plugins>

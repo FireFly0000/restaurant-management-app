@@ -1,12 +1,17 @@
 package com.restaurant.userservice.core.service.user;
 
+import com.restaurant.commons.constant.Constant;
+import com.restaurant.commons.exception.AppException;
 import com.restaurant.userservice.core.repository.IUserRepository;
 import com.restaurant.userservice.core.service.user.dto.UpdateUserRequest;
 import com.restaurant.userservice.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -101,6 +106,17 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
+    public List<User> saveAll(List<User> entities) {
+        if (CollectionUtils.isEmpty(entities)) {
+            _log.warn("saveAll, User list is empty");
+            return new ArrayList<>();
+        }
+        List<User> savedUsers = _repo.saveAll(entities);
+        _log.info("saveAll, Saved {} users", savedUsers.size());
+        return savedUsers;
+    }
+
+    @Override
     public List<User> getActivedUser(int page, int size, String sort, String sortDirection) {
         return List.of();
     }
@@ -108,5 +124,25 @@ public class UserServiceImpl implements IUserService {
     @Override
     public List<User> getAllUser(int page, int size, String sort, String sortDirection) {
         return List.of();
+    }
+
+    @Override
+    public List<User> getUsersByIds(List<UUID> ids) {
+        if(CollectionUtils.isEmpty(ids)){
+            return new ArrayList<>();
+        }
+        return _repo.getUsersByIds(ids);
+    }
+
+    @Override
+    public User verifyAccount(UUID id) {
+        User user = findById(id);
+
+        if (user == null) {
+            return null;
+        }
+
+        user.setIsVerified(true);
+        return save(user);
     }
 }

@@ -1,8 +1,6 @@
 package com.restaurant.authservice.core.rpc;
 
-import com.restaurant.commons.core.rpc.user.CreateUserRequest;
-import com.restaurant.commons.core.rpc.user.CreateUserResponse;
-import com.restaurant.commons.core.rpc.user.FoundUserResponse;
+import com.restaurant.commons.core.rpc.user.*;
 
 public interface IUserServiceRpcClient {
     boolean existsByEmail(String email);
@@ -12,4 +10,5 @@ public interface IUserServiceRpcClient {
     );
     FoundUserResponse findByEmail(String email);
     FoundUserResponse findById(String id);
+    VerifyAccountRpcResponse verifyAccount(VerifyAccountRpcRequest request);
 }
