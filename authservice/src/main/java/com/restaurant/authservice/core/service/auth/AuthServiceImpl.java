@@ -8,11 +8,14 @@ import com.restaurant.authservice.core.service.auth.dto.*;
 import com.restaurant.authservice.core.service.blacklist.IBackListService;
 import com.restaurant.authservice.core.service.jwt.IJwtService;
 import com.restaurant.commons.constant.Constant;
-import com.restaurant.commons.core.rpc.user.CreateUserRequest;
-import com.restaurant.commons.core.rpc.user.CreateUserResponse;
-import com.restaurant.commons.core.rpc.user.FoundUserResponse;
+import com.restaurant.commons.constant.ContactType;
+import com.restaurant.commons.constant.EmailTemplate;
+import com.restaurant.commons.constant.NotificationPurpose;
+import com.restaurant.commons.core.enums.NotiType;
+import com.restaurant.commons.core.rpc.notification.ResendExternalNotificationEvent;
+import com.restaurant.commons.core.rpc.notification.SendEmailEvent;
+import com.restaurant.commons.core.rpc.user.*;
 import com.restaurant.commons.exception.AppException;
-import io.jsonwebtoken.Claims;
 import org.apache.dubbo.rpc.RpcException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +24,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -35,13 +37,10 @@ public class AuthServiceImpl implements IAuthService {
     private final IJwtService _jwtService;
     private final IBackListService _blacklistService;
     private final KafkaProducer _authEventProducer;
-    private final IBackListService _blackListService;
 
     public AuthServiceImpl(
             IUserServiceRpcClient userServiceRpcClient,
             PasswordEncoder passwordEncoder,
-            IJwtService jwtService,
-            IBackListService backListService
             KafkaProducer authEventProducer,
             IJwtService jwtService,
             IBackListService backListService
@@ -51,7 +50,6 @@ public class AuthServiceImpl implements IAuthService {
         this._jwtService = jwtService;
         this._blacklistService = backListService;
         this._authEventProducer = authEventProducer;
-        this._blackListService = backListService;
     }
 
     @Override
@@ -291,7 +289,7 @@ public class AuthServiceImpl implements IAuthService {
             );
         }
 
-        if (this._blackListService.isBlacklisted(request.getToken())) {
+        if (this._blacklistService.isBlacklisted(request.getToken())) {
             _log.warn("verifyAccount, token is blacklisted");
             throw new AppException(
                     "auth.verify.token_invalid",
@@ -359,7 +357,7 @@ public class AuthServiceImpl implements IAuthService {
                     .build();
         }
 
-        _blackListService.blacklistToken(request.getToken());
+        _blacklistService.blacklistToken(request.getToken());
 
         VerifyAccountRpcResponse verifiedUser;
         VerifyAccountRpcRequest verifyAccountRpcRequest =
