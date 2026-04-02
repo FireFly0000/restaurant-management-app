@@ -77,10 +77,11 @@ spring:
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
+      value-serializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
       acks: all
       retries: 0
       properties:
+        schema.registry.url: ${SCHEMA_REGISTRY_HOST:http://localhost}:${SCHEMA_REGISTRY_PORT:8081}
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
         retry.backoff.ms: 1000
@@ -202,6 +203,8 @@ app:
       thread-name-prefix: "BusinessOutboxWorker-"
       batch-size: 50
       max_retries: 3
+      lease-seconds: 30
+      batch-timeout-seconds: 30
 
     cloudflare:
       r2:

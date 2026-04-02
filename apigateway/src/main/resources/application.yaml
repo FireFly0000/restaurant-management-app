@@ -87,7 +87,7 @@ spring:
             - id: business-service
               uri: lb://business-service
               predicates:
-                - Path=/api/v1/businesses/**, /api/v1/locations/**, /api/v1/location-settings/, /api/v1/business-roles/**
+                - Path=/api/v1/businesses/**, /api/v1/business-locations/**, /api/v1/location-settings/, /api/v1/business-roles/**
               filters:
                 - name: RequestRateLimiter
                   args:

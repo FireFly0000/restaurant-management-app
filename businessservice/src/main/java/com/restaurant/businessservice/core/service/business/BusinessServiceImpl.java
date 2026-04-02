@@ -5,7 +5,8 @@ import com.restaurant.businessservice.common.MsgUtil;
 import com.restaurant.businessservice.config.BusinessProperties;
 import com.restaurant.businessservice.constant.BusinessServiceConstant;
 import com.restaurant.businessservice.core.context.RequestContext;
-import com.restaurant.businessservice.core.kafka.KafkaProducer;
+import com.restaurant.businessservice.core.service.outbox.BusinessOutboxService;
+import com.restaurant.commons.constant.KafkaTopic;
 import com.restaurant.businessservice.core.repository.IBusinessRepository;
 import com.restaurant.businessservice.core.rpc.IBusinessServiceRpcClient;
 import com.restaurant.businessservice.core.service.business.dto.*;
@@ -36,6 +37,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -46,7 +48,7 @@ public class BusinessServiceImpl implements IBusinessService {
     private final IBusinessRepository _repo;
     private final IBusinessServiceRpcClient _businessRpcClient;
     private final MsgUtil _msgUtil;
-    private final KafkaProducer _kafka;
+    private final BusinessOutboxService _businessOutboxService;
     private final BusinessProperties _properties;
     private final IBusinessLocationService _businessLocationService;
 
@@ -54,14 +56,14 @@ public class BusinessServiceImpl implements IBusinessService {
             IBusinessRepository _repo,
             MsgUtil _msgUtil,
             IBusinessServiceRpcClient _businessRpcClient,
-            KafkaProducer _kafka,
+            BusinessOutboxService businessOutboxService,
             BusinessProperties _properties,
             IBusinessLocationService _businessLocationService
     ) {
         this._repo = _repo;
         this._msgUtil = _msgUtil;
         this._businessRpcClient = _businessRpcClient;
-        this._kafka = _kafka;
+        this._businessOutboxService = businessOutboxService;
         this._properties = _properties;
         this._businessLocationService = _businessLocationService;
     }
@@ -79,7 +81,7 @@ public class BusinessServiceImpl implements IBusinessService {
 
     @Override
     public Business getById(UUID id) {
-        Optional<Business> obj = _repo.getByIdActiveTrueAndDeleteFalse(id);
+        Optional<Business> obj = _repo.getByIdAndNotDeleted(id);
         if (obj.isPresent()) {
             _log.debug("findById, Business found with id = {}", id);
             return obj.get();
@@ -90,7 +92,7 @@ public class BusinessServiceImpl implements IBusinessService {
 
     @Override
     public Business getByIdAndThrow(UUID id) {
-        Optional<Business> obj = _repo.getByIdActiveTrueAndDeleteFalse(id);
+        Optional<Business> obj = _repo.getByIdAndNotDeleted(id);
         if (obj.isPresent()) {
             _log.debug("findById, Business found with id = {}", id);
             return obj.get();
@@ -214,6 +216,20 @@ public class BusinessServiceImpl implements IBusinessService {
         this.save(business);
 
         _log.info("active, Business inactivated with id = {}", id);
+        return true;
+    }
+
+    @Override
+    public Boolean delete(UUID id) {
+        _log.info("delete, Start deleting Business with id = {}", id);
+        Business business = this.getByIdAndThrow(id);
+        if (business.getIsActive()) {
+            _log.warn("delete, Cannot delete because business is active");
+            throw new AppException(_msgUtil.getMessage("business.delete.fail"), Constant.RES3010,"400");
+        }
+        business.setDeletedAt(System.currentTimeMillis());
+
+        this.save(business);
         return true;
     }
 
@@ -353,8 +369,8 @@ public class BusinessServiceImpl implements IBusinessService {
                     .addAllFiles(filesToClean)
                     .build();
 
-            _kafka.pushStorageFileCleanUpEvent(key, event, new HashMap<>());
-            _log.info("fileCleanUp, Đã bắn event xóa {} files rác lên Kafka", filesToClean.size());
+            this._businessOutboxService.enqueue(KafkaTopic.FILE_CLEANUP, key, event);
+            _log.info("fileCleanUp, Enqueued cleanup event for {} files", filesToClean.size());
         }
     }
 }
