@@ -204,6 +204,20 @@ public class BusinessLocationServiceImpl implements IBusinessLocationService{
     }
 
     @Override
+    public Boolean delete(UUID id) {
+        _log.info("delete, Start deleting location id = {}", id);
+        Location location = this.getByIdAndThrow(id);
+        if (location.getIsActive()) {
+            _log.warn("delete, Cannot delete because location is still active");
+            throw new AppException(_msgUtil.getMessage("location.delete.fail"), Constant.RES3010, "400");
+        }
+        location.setDeletedAt(System.currentTimeMillis());
+        this.save(location);
+        _log.info("delete, Soft deleted location id = {}", id);
+        return true;
+    }
+
+    @Override
     public Location save(Location entity) {
         return this._repo.save(entity);
     }

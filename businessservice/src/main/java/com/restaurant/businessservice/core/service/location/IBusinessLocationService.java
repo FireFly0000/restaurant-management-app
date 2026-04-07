@@ -18,6 +18,7 @@ public interface IBusinessLocationService {
     Boolean active(UUID id);
     Boolean inactive(UUID id);
     Boolean changeManager(UUID id, UpdateLocationManagerRequest request);
+    Boolean delete(UUID id);
 
     Location save(Location entity);
 

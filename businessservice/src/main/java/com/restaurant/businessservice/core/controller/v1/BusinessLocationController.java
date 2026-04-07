@@ -135,4 +135,14 @@ public class BusinessLocationController {
 
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
+
+    @DeleteMapping(value = "/{id}", produces = "application/json")
+    @PreAuthorize("@_authorizer.isOwner(#id, T(com.restaurant.commons.constant.Entity).BUSINESS)")
+    public ResponseEntity<?> delete(@PathVariable("id") String id){
+        UUID locationId = UUID.fromString(id);
+        Boolean result = this._locationService.delete(locationId);
+        ApiResponse apiResponse = AppUtils.buildResponse(_msgUtil.getMessage("location.delete.success"), result, null);
+
+        return new ResponseEntity<>(apiResponse, HttpStatus.OK);
+    }
 }
