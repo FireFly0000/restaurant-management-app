@@ -22,4 +22,5 @@ public interface IBusinessLocationService {
     Location save(Location entity);
 
     List<Location> getBusinessLocationsByBusinessId(UUID businessId);
+    List<Location> getBusinessLocationsByBusinessId(UUID businessId, Boolean isActive);
 }

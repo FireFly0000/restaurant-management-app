@@ -217,4 +217,17 @@ public class BusinessLocationServiceImpl implements IBusinessLocationService{
         }
         return this._repo.getBusinessLocationByBusinessId(businessId);
     }
+
+    @Override
+    public List<Location> getBusinessLocationsByBusinessId(UUID businessId, Boolean isActive) {
+        _log.info("getBusinessLocationsByBusinessId, Start get locations of business with id = {}, isActive = {}", businessId, isActive);
+        if (businessId == null) {
+            _log.warn("getBusinessLocationsByBusinessId, businessId is null");
+            return new ArrayList<>();
+        }
+        if (isActive == null) {
+            return this._repo.getAllBusinessLocationByBusinessId(businessId);
+        }
+        return this._repo.getBusinessLocationByBusinessIdAndIsActive(businessId, isActive);
+    }
 }

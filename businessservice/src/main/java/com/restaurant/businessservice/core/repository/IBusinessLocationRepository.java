@@ -12,6 +12,12 @@ public interface IBusinessLocationRepository extends JpaRepository<Location, UUI
     @Query("SELECT l FROM Location l WHERE l.businessId = :businessId AND l.isActive = true AND l.deletedAt = 0")
     List<Location> getBusinessLocationByBusinessId(UUID businessId);
 
+    @Query("SELECT l FROM Location l WHERE l.businessId = :businessId AND l.isActive = :isActive AND l.deletedAt = 0")
+    List<Location> getBusinessLocationByBusinessIdAndIsActive(UUID businessId, Boolean isActive);
+
+    @Query("SELECT l FROM Location l WHERE l.businessId = :businessId AND l.deletedAt = 0")
+    List<Location> getAllBusinessLocationByBusinessId(UUID businessId);
+
     @Query("SELECT l FROM Location l WHERE l.id = :id AND l.deletedAt = 0")
     Optional<Location> getLocationById(UUID id);
 
