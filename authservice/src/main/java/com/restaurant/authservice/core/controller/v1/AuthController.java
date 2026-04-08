@@ -128,6 +128,7 @@ public class AuthController {
     public ResponseEntity<?> signOut(
             @RequestHeader("X-Refresh-Token") String refreshToken,
             @RequestHeader("Authorization") String authHeader
+            //@RequestHeader("X-Access-Token") String accessToken
     ) {
         _log.info("signOut, request received");
 
@@ -144,6 +145,9 @@ public class AuthController {
         }
 
         String accessToken = authHeader.substring(7);
+
+        System.out.println("ACCESS TOKEN IN CONTROLLER " + accessToken);
+        System.out.println("AUTH HEADER " + authHeader);
 
         _authService.signOut(accessToken, refreshToken);
 

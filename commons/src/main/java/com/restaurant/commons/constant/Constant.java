@@ -9,6 +9,7 @@ import java.util.List;
 public class Constant {
     /* REQUEST HEADER / gRPC METADATA */
     public static final String H_USER_ID = "X-User-Id";
+    public static final String H_ACCESS_TOKEN = "X-Access-Token";
     public static final String H_FORWARDED_FOR = "X-Forwarded-For";
     public static final String H_EVENT_ID = "X-Event-Id";
     /* COMMON */
@@ -32,6 +33,7 @@ public class Constant {
     public static final List<Pair<String, String>> PUBLIC_ENDPOINT = List.of(
             Pair.of(String.format("%s/auth/sign-in", API_V1_PREFIX), HTTP_POST),
             Pair.of(String.format("%s/auth/sign-up", API_V1_PREFIX), HTTP_POST),
+            Pair.of(String.format("%s/auth/sign-out", API_V1_PREFIX), HTTP_POST),
             Pair.of(String.format("%s/auth/refresh-token", API_V1_PREFIX), HTTP_POST),
             Pair.of(String.format("%s/auth/verify", API_V1_PREFIX), HTTP_GET),
             Pair.of(String.format("%s/auth/resend", API_V1_PREFIX), HTTP_POST)

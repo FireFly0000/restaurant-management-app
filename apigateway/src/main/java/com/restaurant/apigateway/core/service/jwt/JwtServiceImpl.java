@@ -27,8 +27,10 @@ public class JwtServiceImpl implements IJwtService {
     @Override
     public boolean isValidToken(String token) {
         if(!isValidJwtTokenFormat(token)){
+            System.out.println("INVALID TOKEN FORMAT");
             return false;
         }
+        System.out.println("TOKEN EXPIRED");
         return !isTokenExpired(token);
     }
 
@@ -55,6 +57,11 @@ public class JwtServiceImpl implements IJwtService {
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    @Override
+    public String extractSubject(String token) {
+        return extractClaim(token, Claims::getSubject);
     }
 
     public static boolean isValidJwtTokenFormat(String token) {
@@ -86,7 +93,7 @@ public class JwtServiceImpl implements IJwtService {
 
     private boolean isTokenExpired(String token){
         try{
-            return !extractClaim(token, Claims::getExpiration).before(new Date());
+            return extractClaim(token, Claims::getExpiration).before(new Date());
         }catch(Exception e){
             _log.error(e.getMessage(), e.getCause());
             return true;

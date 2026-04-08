@@ -89,6 +89,8 @@ public class JwtFilter implements GlobalFilter, Ordered {
                 .getHeaders()
                 .getFirst(HttpHeaders.AUTHORIZATION);
 
+        System.out.println("MY AUTH TOKEN == " + auth);
+
         if(auth == null || !auth.startsWith("Bearer ")) {
             return unauthorized(exchange);
         }
@@ -99,11 +101,14 @@ public class JwtFilter implements GlobalFilter, Ordered {
             return unauthorized(exchange);
         }
 
-        UUID userId = _jwtService.extractClaim(token, Constant.USER_ID, UUID.class);
+        String userId = _jwtService.extractSubject(token);
+
+        System.out.println("MY USER ID" + userId);
 
         ServerHttpRequest newReq = exchange.getRequest().mutate()
-                .header(Constant.H_USER_ID, userId.toString())
-                .headers(h -> h.remove(HttpHeaders.AUTHORIZATION))
+                .header(Constant.H_USER_ID, userId)
+                .header(Constant.H_ACCESS_TOKEN, token)
+                //.headers(h -> h.remove(HttpHeaders.AUTHORIZATION))
                 .build();
 
         return chain.filter(exchange.mutate().request(newReq).build());
