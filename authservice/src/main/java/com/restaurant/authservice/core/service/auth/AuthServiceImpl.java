@@ -35,8 +35,8 @@ public class AuthServiceImpl implements IAuthService {
     private final Logger _log = LoggerFactory.getLogger(AuthServiceImpl.class);
     private final PasswordEncoder _passwordEncoder;
     private final IJwtService _jwtService;
+    private final IBackListService _blacklistService;
     private final KafkaProducer _authEventProducer;
-    private final IBackListService _blackListService;
 
     public AuthServiceImpl(
             IUserServiceRpcClient userServiceRpcClient,
@@ -48,8 +48,8 @@ public class AuthServiceImpl implements IAuthService {
         this._userServiceRpcClient = userServiceRpcClient;
         this._passwordEncoder = passwordEncoder;
         this._jwtService = jwtService;
+        this._blacklistService = backListService;
         this._authEventProducer = authEventProducer;
-        this._blackListService = backListService;
     }
 
     @Override
@@ -289,7 +289,7 @@ public class AuthServiceImpl implements IAuthService {
             );
         }
 
-        if (this._blackListService.isBlacklisted(request.getToken())) {
+        if (this._blacklistService.isBlacklisted(request.getToken())) {
             _log.warn("verifyAccount, token is blacklisted");
             throw new AppException(
                     "auth.verify.token_invalid",
@@ -357,7 +357,7 @@ public class AuthServiceImpl implements IAuthService {
                     .build();
         }
 
-        _blackListService.blacklistToken(request.getToken());
+        _blacklistService.blacklistToken(request.getToken());
 
         VerifyAccountRpcResponse verifiedUser;
         VerifyAccountRpcRequest verifyAccountRpcRequest =
@@ -454,6 +454,21 @@ public class AuthServiceImpl implements IAuthService {
                 .accessToken(newAccessToken)
                 .refreshToken(refreshToken)
                 .build();
+    }
+
+    @Override
+    public void signOut(String accessToken, String refreshToken) {
+        _log.info("signOut, processing sign out request");
+
+        // Blacklist access token
+        _blacklistService.blacklistToken(accessToken);
+
+        // Blacklist refresh token if provided
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            _blacklistService.blacklistToken(refreshToken);
+        }
+
+        _log.info("signOut, tokens blacklisted successfully");
     }
 
     @Override

@@ -12,8 +12,8 @@ import javax.crypto.SecretKey;
 @Configuration
 public class AuthServiceProperties {
     private Jwt jwt;
-    private Redis redis;
     private Blacklist blacklist;
+    private Redis redis;
 
     @Data
     public static class Jwt {
