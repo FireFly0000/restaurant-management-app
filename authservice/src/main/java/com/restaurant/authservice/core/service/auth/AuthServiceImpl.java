@@ -468,8 +468,37 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public Boolean forgotPassword(ForgotPasswordRequest request) {
-        return null;
+    public ForgotPasswordResponse forgotPassword(ForgotPasswordRequest request) {
+        _log.info("forgotPassword, processing for email={}", request.getEmail());
+
+        FoundUserResponse user;
+
+        try {
+            user = _userServiceRpcClient.findByEmail(request.getEmail());
+        } catch (RpcException rpcEx) {
+            _log.error("forgotPassword, RPC failed for email={}", request.getEmail(), rpcEx);
+            throw new AppException("user.service.rpc.error", Constant.RES0007, HttpStatus.SERVICE_UNAVAILABLE.name());
+        }
+
+        if (!user.getFound() || !user.getIsActive() || user.getIsDeleted()) {
+            _log.warn("forgotPassword, user not found or inactive, returning silently email={}", request.getEmail());
+            return ForgotPasswordResponse.builder()
+                    .email(request.getEmail())
+                    .sent(false)
+                    .build();
+        }
+
+        sendResetPasswordEmail(
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName()
+        );
+
+        return ForgotPasswordResponse.builder()
+                .email(request.getEmail())
+                .sent(true)
+                .build();
     }
 
     @Override
@@ -611,6 +640,55 @@ public class AuthServiceImpl implements IAuthService {
                 .build();
 
         pushResendExternalNotificationEvent(event);
+    }
+
+    private void sendResetPasswordEmail(
+            String userId,
+            String email,
+            String firstName,
+            String lastName
+    ) {
+        // Generate reset token
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", email);
+        claims.put("firstName", firstName != null ? firstName : "");
+        claims.put("lastName", lastName != null ? lastName : "");
+        claims.put("purpose", NotificationPurpose.RESET_PASSWORD.name());
+
+        String resetToken = _jwtService.generateResetPasswordToken(userId, claims);
+
+        String resetUrl = UriComponentsBuilder
+                .fromUriString("http://localhost:8081")
+                .path("/api/v1/auth/reset-password")
+                .queryParam("token", resetToken)
+                .toUriString();
+
+        Map<String, Value> metadataFields = new HashMap<>();
+        metadataFields.put("firstName", Value.newBuilder()
+                .setStringValue(firstName != null ? firstName : "").build());
+        metadataFields.put("lastName", Value.newBuilder()
+                .setStringValue(lastName != null ? lastName : "").build());
+        metadataFields.put("resetUrl", Value.newBuilder()
+                .setStringValue(resetUrl).build());
+
+        Struct metadata = Struct.newBuilder()
+                .putAllFields(metadataFields)
+                .build();
+
+        SendEmailEvent event = SendEmailEvent.newBuilder()
+                .setRecipient(email)
+                .setRecipientId(userId)
+                .setUserId(userId)
+                .addTo(email)
+                .setSubject(getEmailSubject(NotificationPurpose.RESET_PASSWORD))
+                .setFrom("no-reply@restaurant.com")
+                .setTemplateName(EmailTemplate.RESET_PASSWORD)
+                .setMetadata(metadata)
+                .setType(NotiType.SYSTEM.name())
+                .build();
+
+        _authOutboxService.enqueue(KafkaTopic.FORGOT_PASSWORD, userId, event);
+        _log.info("sendResetPasswordEmail, reset email enqueued for userId={}", userId);
     }
 
     private void pushResendExternalNotificationEvent(

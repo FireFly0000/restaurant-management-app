@@ -8,6 +8,7 @@ public interface IJwtService {
     String generateRefreshToken(String userId, Map<String, Object> extraClaims);
     String generateVerifyAccountToken(String userId, Map<String, Object> extraClaims);
     String generateRefreshToken(String userId);
+    String generateResetPasswordToken(String userId, Map<String, Object> extraClaims);
     boolean isValidToken(String token);
     boolean isValidTokenIgnoreExpiry(String token);
     boolean isTokenExpired(String token);

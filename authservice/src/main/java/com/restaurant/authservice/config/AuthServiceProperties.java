@@ -22,6 +22,7 @@ public class AuthServiceProperties {
         private long accessTokenExpiration;
         private long refreshTokenExpiration;
         private long verifyAccountTokenExpiration;
+        private long resetPasswordTokenExpiration;
     }
 
     @Data

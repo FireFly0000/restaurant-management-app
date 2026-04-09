@@ -36,7 +36,8 @@ public class Constant {
             Pair.of(String.format("%s/auth/sign-out", API_V1_PREFIX), HTTP_POST),
             Pair.of(String.format("%s/auth/refresh-token", API_V1_PREFIX), HTTP_POST),
             Pair.of(String.format("%s/auth/verify", API_V1_PREFIX), HTTP_GET),
-            Pair.of(String.format("%s/auth/resend", API_V1_PREFIX), HTTP_POST)
+            Pair.of(String.format("%s/auth/resend", API_V1_PREFIX), HTTP_POST),
+            Pair.of(String.format("%s/auth/forgot-password", API_V1_PREFIX), HTTP_POST)
     );
 
     /* ERROR CODE */

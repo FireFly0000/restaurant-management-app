@@ -156,4 +156,20 @@ public class AuthController {
                 HttpStatus.OK
         );
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody @Valid ForgotPasswordRequest request) {
+        _log.info("forgotPassword, request received for email={}", request.getEmail());
+
+        ForgotPasswordResponse result = _authService.forgotPassword(request);
+
+        return new ResponseEntity<>(
+                AppUtils.buildResponse(
+                        Utils.getMessage("auth.forgot.success"),
+                        result,
+                        null
+                ),
+                HttpStatus.OK
+        );
+    }
 }
