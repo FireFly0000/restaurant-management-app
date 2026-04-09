@@ -2,15 +2,12 @@ package com.restaurant.authservice.core.service.auth;
 
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
-import com.restaurant.authservice.core.kafka.KafkaProducer;
 import com.restaurant.authservice.core.rpc.IUserServiceRpcClient;
 import com.restaurant.authservice.core.service.auth.dto.*;
+import com.restaurant.authservice.core.service.authoutbox.AuthOutboxService;
 import com.restaurant.authservice.core.service.blacklist.IBackListService;
 import com.restaurant.authservice.core.service.jwt.IJwtService;
-import com.restaurant.commons.constant.Constant;
-import com.restaurant.commons.constant.ContactType;
-import com.restaurant.commons.constant.EmailTemplate;
-import com.restaurant.commons.constant.NotificationPurpose;
+import com.restaurant.commons.constant.*;
 import com.restaurant.commons.core.enums.NotiType;
 import com.restaurant.commons.core.rpc.notification.ResendExternalNotificationEvent;
 import com.restaurant.commons.core.rpc.notification.SendEmailEvent;
@@ -26,7 +23,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements IAuthService {
@@ -36,20 +32,20 @@ public class AuthServiceImpl implements IAuthService {
     private final PasswordEncoder _passwordEncoder;
     private final IJwtService _jwtService;
     private final IBackListService _blacklistService;
-    private final KafkaProducer _authEventProducer;
+    private final AuthOutboxService _authOutboxService;
 
     public AuthServiceImpl(
             IUserServiceRpcClient userServiceRpcClient,
             PasswordEncoder passwordEncoder,
-            KafkaProducer authEventProducer,
             IJwtService jwtService,
-            IBackListService backListService
+            IBackListService backListService,
+            AuthOutboxService authOutboxService
     ){
         this._userServiceRpcClient = userServiceRpcClient;
         this._passwordEncoder = passwordEncoder;
         this._jwtService = jwtService;
         this._blacklistService = backListService;
-        this._authEventProducer = authEventProducer;
+        this._authOutboxService = authOutboxService;
     }
 
     @Override
@@ -554,8 +550,8 @@ public class AuthServiceImpl implements IAuthService {
                 .setTemplateName(templateName)
                 .build();                                  // userId is optional — set only if available
 
-        _log.info("signUp, about to send Kafka event for email: {}", email);
-        _authEventProducer.pushUserCreatedEvent(userId , emailEvent, new HashMap<>() );
+        _log.info("signUp, about to enqueue Kafka event for email: {}", email);
+        _authOutboxService.enqueue(KafkaTopic.USER_CREATED, userId, emailEvent);
         _log.info("signUp, Kafka event dispatched for email: {}", email);
     }
 
@@ -623,11 +619,7 @@ public class AuthServiceImpl implements IAuthService {
         _log.info("pushResendExternalNotificationEvent, userId={}, contactType={}, purpose={}",
                 event.getUserId(), event.getContactType(), event.getPurpose());
 
-        String eventId = UUID.randomUUID().toString();
-        Map<String, String> headers = new HashMap<>();
-        headers.put(Constant.H_EVENT_ID, eventId);
-
-        _authEventProducer.pushResendExternalNotificationEvent(event.getUserId(), event, headers);
+        _authOutboxService.enqueue(KafkaTopic.RESEND_EXTERNAL_NOTIFICATION, event.getUserId(), event);
         _log.info("sendExternalVerifyNotification, event pushed userId={}", event.getUserId());
     }
 

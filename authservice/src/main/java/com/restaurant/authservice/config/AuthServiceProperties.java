@@ -14,6 +14,7 @@ public class AuthServiceProperties {
     private Jwt jwt;
     private Blacklist blacklist;
     private Redis redis;
+    private Outbox outbox;
 
     @Data
     public static class Jwt {
@@ -32,5 +33,17 @@ public class AuthServiceProperties {
     public static class Redis {
         private String host;
         private int port;
+    }
+
+    @Data
+    public static class Outbox {
+        private int corePoolSize;
+        private int maxPoolSize;
+        private int queueCapacity;
+        private String threadNamePrefix;
+        private int batchSize;
+        private int maxRetries;
+        private int leaseSeconds;
+        private int batchTimeoutSeconds;
     }
 }
