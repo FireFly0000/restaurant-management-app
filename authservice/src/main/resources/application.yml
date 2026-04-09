@@ -226,3 +226,13 @@ app:
       port: ${REDIS_PORT}
     blacklist:
       prefix: "blacklist:jwt:"
+    # Outbox settings
+    outbox:
+      core-pool-size: 5
+      max-pool-size: 20
+      queue-capacity: 100
+      thread-name-prefix: "AuthOutboxWorker-"
+      batch-size: 50
+      max-retries: 3
+      lease-seconds: 30
+      batch-timeout-seconds: 30
