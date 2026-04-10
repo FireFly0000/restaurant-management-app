@@ -172,4 +172,18 @@ public class AuthController {
                 HttpStatus.OK
         );
     }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
+        _log.info("resetPassword, request received");
+        ResetPasswordResponse result = _authService.resetPassword(request);
+        return new ResponseEntity<>(
+                AppUtils.buildResponse(
+                        Utils.getMessage("auth.reset.success"),
+                        result,
+                        null
+                ),
+                HttpStatus.OK
+        );
+    }
 }

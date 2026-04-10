@@ -18,6 +18,7 @@ service UserService{
 
     //updates
     rpc VerifyAccount(VerifyAccountRpcRequest) returns (VerifyAccountRpcResponse);
+    rpc UpdatePassword(UpdatePasswordRpcRequest) returns (UpdatePasswordRpcResponse);
 }
 
 //Request messages
@@ -48,6 +49,11 @@ message FindByIdRequest {
 
 message VerifyAccountRpcRequest {
     string id = 1;
+}
+
+message UpdatePasswordRpcRequest {
+    string id = 1;
+    string password = 2;
 }
 
 //Response messages
@@ -106,4 +112,10 @@ message VerifyAccountRpcResponse {
     string last_name = 4;
     string phone_number = 5;
     bool user_not_found = 6;
+}
+
+message UpdatePasswordRpcResponse {
+    string id = 1;
+    string email = 2;
+    bool success = 3;
 }
