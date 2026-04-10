@@ -54,6 +54,8 @@ message ResendExternalNotificationEvent {
     string contact_type = 15;
 }
 
+
+
 message SendSmsEvent {
 
 }

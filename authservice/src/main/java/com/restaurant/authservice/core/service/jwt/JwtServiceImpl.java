@@ -23,6 +23,7 @@ public class JwtServiceImpl implements IJwtService {
     private final long _accessTokenExpiration;   // e.g. 900000 = 15 minutes
     private final long _refreshTokenExpiration;  // e.g. 604800000 = 7 days
     private final long _verifyAccountTokenExpiration; //15 mins
+    private final long _resetPasswordTokenExpiration; //15 mins
     private static final Logger _log = LoggerFactory.getLogger(JwtServiceImpl.class);
 
     public JwtServiceImpl(AuthServiceProperties properties){
@@ -30,6 +31,7 @@ public class JwtServiceImpl implements IJwtService {
         this._accessTokenExpiration = properties.getJwt().getAccessTokenExpiration();
         this._refreshTokenExpiration = properties.getJwt().getRefreshTokenExpiration();
         this._verifyAccountTokenExpiration = properties.getJwt().getVerifyAccountTokenExpiration();
+        this._resetPasswordTokenExpiration = properties.getJwt().getResetPasswordTokenExpiration();
     }
 
     @Override
@@ -72,6 +74,17 @@ public class JwtServiceImpl implements IJwtService {
                 .claims(extraClaims)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + _verifyAccountTokenExpiration ))
+                .signWith(_secretKey)
+                .compact();
+    }
+
+    @Override
+    public String generateResetPasswordToken(String userId, Map<String, Object> extraClaims){
+        return Jwts.builder()
+                .subject(userId)
+                .claims(extraClaims)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + _resetPasswordTokenExpiration ))
                 .signWith(_secretKey)
                 .compact();
     }
