@@ -85,4 +85,10 @@ public class UserServiceRpcClientImpl implements IUserServiceRpcClient {
         _log.info("Calling user-service via Dubbo: verifyAccount({})", request.getId());
         return _userServiceStub.verifyAccount(request);
     }
+
+    @Override
+    public UpdatePasswordRpcResponse updatePassword(UpdatePasswordRpcRequest request){
+        _log.info("Calling user-service via Dubbo: updatePassword({})", request.getId());
+        return  _userServiceStub.updatePassword(request);
+    }
 }

@@ -1,16 +1,13 @@
 package com.restaurant.authservice.core.service.auth;
 
-import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
+import com.restaurant.authservice.config.AuthServiceProperties;
 import com.restaurant.authservice.core.rpc.IUserServiceRpcClient;
 import com.restaurant.authservice.core.service.auth.dto.*;
-import com.restaurant.authservice.core.service.authoutbox.AuthOutboxService;
 import com.restaurant.authservice.core.service.blacklist.IBackListService;
 import com.restaurant.authservice.core.service.jwt.IJwtService;
+import com.restaurant.authservice.helper.EmailNotificationHelper;
 import com.restaurant.commons.constant.*;
-import com.restaurant.commons.core.enums.NotiType;
-import com.restaurant.commons.core.rpc.notification.ResendExternalNotificationEvent;
-import com.restaurant.commons.core.rpc.notification.SendEmailEvent;
 import com.restaurant.commons.core.rpc.user.*;
 import com.restaurant.commons.exception.AppException;
 import org.apache.dubbo.rpc.RpcException;
@@ -32,20 +29,23 @@ public class AuthServiceImpl implements IAuthService {
     private final PasswordEncoder _passwordEncoder;
     private final IJwtService _jwtService;
     private final IBackListService _blacklistService;
-    private final AuthOutboxService _authOutboxService;
+    private final String _frontendBaseUrl;
+    private final EmailNotificationHelper _emailNotificationHelper;
 
     public AuthServiceImpl(
             IUserServiceRpcClient userServiceRpcClient,
             PasswordEncoder passwordEncoder,
             IJwtService jwtService,
             IBackListService backListService,
-            AuthOutboxService authOutboxService
+            AuthServiceProperties authServiceProperties,
+            EmailNotificationHelper emailNotificationHelper
     ){
         this._userServiceRpcClient = userServiceRpcClient;
         this._passwordEncoder = passwordEncoder;
         this._jwtService = jwtService;
         this._blacklistService = backListService;
-        this._authOutboxService = authOutboxService;
+        this._frontendBaseUrl = authServiceProperties.getFrontendBaseUrl();
+        this._emailNotificationHelper = emailNotificationHelper;
     }
 
     @Override
@@ -186,9 +186,7 @@ public class AuthServiceImpl implements IAuthService {
                     createdUser.getEmail(),
                     createdUser.getPhoneNumber(),
                     createdUser.getFirstName(),
-                    createdUser.getLastName(),
-                    EmailTemplate.VERIFY_EMAIL,
-                    ContactType.EMAIL
+                    createdUser.getLastName()
             );
 
             return SignupResponse.builder()
@@ -225,51 +223,6 @@ public class AuthServiceImpl implements IAuthService {
                 .identifier(request.getIdentifier())
                 .purpose(request.getPurpose())
                 .build();
-    }
-
-    private void resendToEmail(ResendRequest request) {
-        FoundUserResponse user;
-        try {
-            user = _userServiceRpcClient.findByEmail(request.getIdentifier());
-        } catch (RpcException rpcEx) {
-            _log.error("resendToEmail, RPC failed for email={}", request.getIdentifier(), rpcEx);
-            throw new AppException(
-                    "user.service.rpc.error",
-                    Constant.RES0007,
-                    HttpStatus.SERVICE_UNAVAILABLE.name()
-            );
-        }
-
-        // Security: always return true even if user not found
-        if (!user.getFound() || !user.getIsActive() || user.getIsDeleted()) {
-            _log.warn("resendToEmail, user not found or inactive, returning silently");
-            return;
-        }
-
-        switch (request.getPurpose()) {
-            case VERIFY, RESEND_VERIFY_EMAIL -> {
-                if (user.getIsVerified()) {
-                    _log.info("resendToEmail, already verified, skipping");
-                    return;
-                }
-                resendVerifyEmail(
-                        user.getId(),
-                        user.getEmail(),
-                        user.getFirstName(),
-                        user.getLastName(),
-                        ContactType.EMAIL
-                );
-            }
-            case RESET_PASSWORD -> {
-                // future: sendResetPasswordEmail(...)
-                _log.info("resendToEmail, RESET_PASSWORD not yet implemented");
-            }
-        }
-    }
-
-    private void resendToPhone(ResendRequest request) {
-        // future: OTP via SMS
-        _log.info("resendToPhone, not yet implemented for identifier={}", request.getIdentifier());
     }
 
     @Override
@@ -477,7 +430,11 @@ public class AuthServiceImpl implements IAuthService {
             user = _userServiceRpcClient.findByEmail(request.getEmail());
         } catch (RpcException rpcEx) {
             _log.error("forgotPassword, RPC failed for email={}", request.getEmail(), rpcEx);
-            throw new AppException("user.service.rpc.error", Constant.RES0007, HttpStatus.SERVICE_UNAVAILABLE.name());
+            throw new AppException(
+                    "user.service.rpc.error",
+                    Constant.RES0007,
+                    HttpStatus.SERVICE_UNAVAILABLE.name()
+            );
         }
 
         if (!user.getFound() || !user.getIsActive() || user.getIsDeleted()) {
@@ -502,8 +459,102 @@ public class AuthServiceImpl implements IAuthService {
     }
 
     @Override
-    public Boolean resetPassword(ResetPasswordRequest request) {
-        return null;
+    public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
+        _log.info("resetPassword, processing request");
+
+        // 1. Validate token signature (ignore expiry first)
+        if (!_jwtService.isValidTokenIgnoreExpiry(request.getToken())) {
+            throw new AppException(
+                    "auth.reset.token.invalid",
+                    Constant.RES3005,
+                    HttpStatus.BAD_REQUEST.name()
+            );
+        }
+
+        // 2. Check if token is blacklisted (already used)
+        if (_blacklistService.isBlacklisted(request.getToken())) {
+            throw new AppException(
+                    "auth.reset.token.already_used",
+                    Constant.RES3005,
+                    HttpStatus.BAD_REQUEST.name()
+            );
+        }
+
+        // 3. Check if token is expired
+        String email = "Unknown user";
+        if (_jwtService.isTokenExpired(request.getToken())) {
+            email = _jwtService.extractClaimIgnoreExpiry(request.getToken(), "email", String.class);
+
+            Map<String, String> data = new HashMap<>();
+            data.put("email", email);
+            data.put("contactType", request.getType().name());
+
+            throw new AppException(
+                    "auth.reset.token.expired",
+                    Constant.RES3005,
+                    HttpStatus.GONE.name(),
+                    data
+            );
+        }
+
+        // 4. Validate passwords match
+        if (!request.getNewPassword().equals(request.getConfirmNewPassword())) {
+            throw new AppException(
+                    "auth.reset.password.not_match",
+                    Constant.RES3001,
+                    HttpStatus.BAD_REQUEST.name()
+            );
+        }
+
+        // 5. Extract userId from token
+        String userId = _jwtService.extractSubject(request.getToken());
+
+        // 6. Verify user still exists and is active
+        FoundUserResponse user;
+        try {
+            user = _userServiceRpcClient.findById(userId);
+        } catch (RpcException rpcEx) {
+            throw new AppException("user.service.rpc.error", Constant.RES0007, HttpStatus.SERVICE_UNAVAILABLE.name());
+        }
+
+        if (!user.getFound() || !user.getIsActive() || user.getIsDeleted()) {
+            throw new AppException(
+                    "auth.reset.user_not_found",
+                    Constant.RES3002,
+                    HttpStatus.UNAUTHORIZED.name()
+            );
+        }
+
+        // 7. Hash new password
+        String hashedPassword = _passwordEncoder.encode(request.getNewPassword());
+
+        // 8. Update password via RPC
+        UpdatePasswordRpcRequest updatePasswordRequest =
+                UpdatePasswordRpcRequest.newBuilder()
+                        .setId(userId)
+                        .setPassword(hashedPassword)
+                        .build();
+
+        UpdatePasswordRpcResponse updatePasswordRpcResponse;
+        try {
+            updatePasswordRpcResponse = _userServiceRpcClient.updatePassword(updatePasswordRequest);
+        } catch (RpcException rpcEx) {
+            throw new AppException(
+                    "user.service.rpc.error",
+                    Constant.RES0007,
+                    HttpStatus.SERVICE_UNAVAILABLE.name()
+            );
+        }
+
+        // 9. Blacklist the reset token — one time use
+        _blacklistService.blacklistToken(request.getToken());
+
+        _log.info("resetPassword, password updated successfully for userId={}", userId);
+        return ResetPasswordResponse.builder()
+                .email(updatePasswordRpcResponse.getEmail())
+                .id(updatePasswordRpcResponse.getId())
+                .success(updatePasswordRpcResponse.getSuccess())
+                .build();
     }
 
     @Override
@@ -511,14 +562,60 @@ public class AuthServiceImpl implements IAuthService {
         return null;
     }
 
+    private void resendToEmail(ResendRequest request) {
+        FoundUserResponse user;
+        try {
+            user = _userServiceRpcClient.findByEmail(request.getIdentifier());
+        } catch (RpcException rpcEx) {
+            _log.error("resendToEmail, RPC failed for email={}", request.getIdentifier(), rpcEx);
+            throw new AppException(
+                    "user.service.rpc.error",
+                    Constant.RES0007,
+                    HttpStatus.SERVICE_UNAVAILABLE.name()
+            );
+        }
+
+        // Security: always return true even if user not found
+        if (!user.getFound() || !user.getIsActive() || user.getIsDeleted()) {
+            _log.warn("resendToEmail, user not found or inactive, returning silently");
+            return;
+        }
+
+        switch (request.getPurpose()) {
+            case VERIFY, RESEND_VERIFY_EMAIL -> {
+                if (user.getIsVerified()) {
+                    _log.info("resendToEmail, already verified, skipping");
+                    return;
+                }
+                resendVerifyEmail(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getFirstName(),
+                        user.getLastName()
+                );
+            }
+            case RESET_PASSWORD, RESEND_RESET_PASSWORD_EMAIL -> {
+                resendResetPasswordEmail(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getFirstName(),
+                        user.getLastName()
+                );
+            }
+        }
+    }
+
+    private void resendToPhone(ResendRequest request) {
+        // future: OTP via SMS
+        _log.info("resendToPhone, not yet implemented for identifier={}", request.getIdentifier());
+    }
+
     private void sendVerifyEmail(
             String userId,
             String email,
             String phoneNumber,
             String firstName,
-            String lastName,
-            String templateName,
-            ContactType contactType
+            String lastName
     ) {
         FoundUserResponse user;
         try {
@@ -544,14 +641,14 @@ public class AuthServiceImpl implements IAuthService {
         claims.put("firstName", firstName);
         claims.put("lastName", lastName);
         claims.put("type", "VERIFY_EMAIL");
-        claims.put("contactType", contactType);
+        claims.put("contactType", ContactType.EMAIL);
 
         String verifyToken = _jwtService.generateVerifyAccountToken(
                 userId, claims
         );
 
         String verifyUrl = UriComponentsBuilder
-                .fromUriString("http://localhost:8081")  // "http://localhost:8081"
+                .fromUriString(_frontendBaseUrl)
                 .path("/api/v1/auth/verify")
                 .queryParam("token", verifyToken)
                 .queryParam("type", ContactType.EMAIL.name())
@@ -563,33 +660,21 @@ public class AuthServiceImpl implements IAuthService {
         metadataFields.put("lastName",  Value.newBuilder().setStringValue(lastName).build());
         metadataFields.put("verifyUrl", Value.newBuilder().setStringValue(verifyUrl).build());
 
-        Struct metadata = Struct.newBuilder()
-                .putAllFields(metadataFields)
-                .build();
-
-        SendEmailEvent emailEvent = SendEmailEvent.newBuilder()
-                .setRecipient(email)
-                .setUserId(userId)
-                .setRecipientId(userId)
-                .addTo(email)
-                .setSubject("Please verify your account!")
-                .setMetadata(metadata)
-                .setFrom("no-reply@restaurant.com")
-                .setType(NotiType.SYSTEM.name())
-                .setTemplateName(templateName)
-                .build();                                  // userId is optional — set only if available
-
-        _log.info("signUp, about to enqueue Kafka event for email: {}", email);
-        _authOutboxService.enqueue(KafkaTopic.USER_CREATED, userId, emailEvent);
-        _log.info("signUp, Kafka event dispatched for email: {}", email);
+        _emailNotificationHelper.sendEmail(
+                userId,
+                email,
+                "Please verify your account!",
+                EmailTemplate.VERIFY_EMAIL,
+                KafkaTopic.USER_CREATED,
+                metadataFields
+        );
     }
 
     private void resendVerifyEmail(
             String userId,
             String email,
             String firstName,
-            String lastName,
-            ContactType contactType
+            String lastName
     ) {
         // Token generation is verify-specific — belongs here
         Map<String, Object> claims = new HashMap<>();
@@ -601,7 +686,7 @@ public class AuthServiceImpl implements IAuthService {
         String verifyToken = _jwtService.generateVerifyAccountToken(userId, claims);
 
         String verifyUrl = UriComponentsBuilder
-                .fromUriString("http://localhost:8081")
+                .fromUriString(_frontendBaseUrl)
                 .path("/api/v1/auth/verify")
                 .queryParam("token", verifyToken)
                 .queryParam("type", ContactType.EMAIL.name())
@@ -615,31 +700,14 @@ public class AuthServiceImpl implements IAuthService {
         metadataFields.put("verifyUrl", Value.newBuilder()
                 .setStringValue(verifyUrl).build());
 
-        Struct metadata = Struct.newBuilder()
-                .putAllFields(metadataFields)
-                .build();
-
-/*        String templateName = switch (purpose) {
-            case VERIFY             -> EmailTemplate.VERIFY_EMAIL;
-            case RESEND_VERIFY_EMAIL -> EmailTemplate.RESEND_VERIFY_EMAIL;
-            default -> throw new IllegalArgumentException("Unsupported purpose: " + purpose);
-        };*/
-
-        ResendExternalNotificationEvent event = ResendExternalNotificationEvent.newBuilder()
-                .setRecipient(email != null ? email : "")
-                .setRecipientId(userId)
-                .setUserId(userId)
-                .setContactType(contactType.name())
-                .setPurpose(NotificationPurpose.RESEND_VERIFY_EMAIL.name())
-                .addTo(email != null ? email : "")
-                .setSubject(getEmailSubject(NotificationPurpose.RESEND_VERIFY_EMAIL))
-                .setFrom("no-reply@restaurant.com")
-                .setTemplateName(EmailTemplate.RESEND_VERIFY_EMAIL)
-                .setMetadata(metadata)
-                .setType(NotiType.SYSTEM.name())
-                .build();
-
-        pushResendExternalNotificationEvent(event);
+        _emailNotificationHelper.resendExternalNotification(
+                userId,
+                email,
+                EmailTemplate.RESEND_VERIFY_EMAIL,
+                KafkaTopic.RESEND_EXTERNAL_NOTIFICATION,
+                metadataFields,
+                ContactType.EMAIL
+        );
     }
 
     private void sendResetPasswordEmail(
@@ -658,7 +726,7 @@ public class AuthServiceImpl implements IAuthService {
         String resetToken = _jwtService.generateResetPasswordToken(userId, claims);
 
         String resetUrl = UriComponentsBuilder
-                .fromUriString("http://localhost:8081")
+                .fromUriString(_frontendBaseUrl)
                 .path("/api/v1/auth/reset-password")
                 .queryParam("token", resetToken)
                 .toUriString();
@@ -671,41 +739,52 @@ public class AuthServiceImpl implements IAuthService {
         metadataFields.put("resetUrl", Value.newBuilder()
                 .setStringValue(resetUrl).build());
 
-        Struct metadata = Struct.newBuilder()
-                .putAllFields(metadataFields)
-                .build();
-
-        SendEmailEvent event = SendEmailEvent.newBuilder()
-                .setRecipient(email)
-                .setRecipientId(userId)
-                .setUserId(userId)
-                .addTo(email)
-                .setSubject(getEmailSubject(NotificationPurpose.RESET_PASSWORD))
-                .setFrom("no-reply@restaurant.com")
-                .setTemplateName(EmailTemplate.RESET_PASSWORD)
-                .setMetadata(metadata)
-                .setType(NotiType.SYSTEM.name())
-                .build();
-
-        _authOutboxService.enqueue(KafkaTopic.FORGOT_PASSWORD, userId, event);
-        _log.info("sendResetPasswordEmail, reset email enqueued for userId={}", userId);
+        _emailNotificationHelper.sendEmail(
+                userId,
+                email,
+                _emailNotificationHelper.getEmailSubject(NotificationPurpose.RESET_PASSWORD),
+                EmailTemplate.RESET_PASSWORD,
+                KafkaTopic.FORGOT_PASSWORD,
+                metadataFields
+        );
     }
 
-    private void pushResendExternalNotificationEvent(
-            ResendExternalNotificationEvent event
+    private void resendResetPasswordEmail(
+            String userId,
+            String email,
+            String firstName,
+            String lastName
     ) {
-        _log.info("pushResendExternalNotificationEvent, userId={}, contactType={}, purpose={}",
-                event.getUserId(), event.getContactType(), event.getPurpose());
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", email);
+        claims.put("firstName", firstName != null ? firstName : "");
+        claims.put("lastName", lastName != null ? lastName : "");
+        claims.put("purpose", NotificationPurpose.RESEND_RESET_PASSWORD_EMAIL);
 
-        _authOutboxService.enqueue(KafkaTopic.RESEND_EXTERNAL_NOTIFICATION, event.getUserId(), event);
-        _log.info("sendExternalVerifyNotification, event pushed userId={}", event.getUserId());
-    }
+        String resetPasswordToken = _jwtService.generateResetPasswordToken(userId, claims);
 
-    private String getEmailSubject(NotificationPurpose purpose) {
-        return switch (purpose) {
-            case VERIFY         -> "Please verify your account!";
-            case RESEND_VERIFY_EMAIL  -> "New verification link";
-            case RESET_PASSWORD -> "Reset your password";
-        };
+        String resetUrl = UriComponentsBuilder
+                .fromUriString(_frontendBaseUrl)
+                .path("/api/v1/auth/reset-password")
+                .queryParam("token", resetPasswordToken)
+                .queryParam("type", ContactType.EMAIL.name())
+                .toUriString();
+
+        Map<String, Value> metadataFields = new HashMap<>();
+        metadataFields.put("firstName", Value.newBuilder()
+                .setStringValue(firstName != null ? firstName : "").build());
+        metadataFields.put("lastName", Value.newBuilder()
+                .setStringValue(lastName != null ? lastName : "").build());
+        metadataFields.put("resetUrl", Value.newBuilder()
+                .setStringValue(resetUrl).build());
+
+        _emailNotificationHelper.resendExternalNotification(
+                userId,
+                email,
+                EmailTemplate.RESEND_RESET_PASSWORD,
+                KafkaTopic.RESEND_EXTERNAL_NOTIFICATION,
+                metadataFields,
+                ContactType.EMAIL
+        );
     }
 }

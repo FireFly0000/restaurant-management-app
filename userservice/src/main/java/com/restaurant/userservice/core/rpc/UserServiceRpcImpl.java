@@ -192,6 +192,33 @@ public class UserServiceRpcImpl extends DubboUserServiceTriple.UserServiceImplBa
         }
     }
 
+    @Override
+    public UpdatePasswordRpcResponse updatePassword(UpdatePasswordRpcRequest request){
+        try {
+            _log.info("RPC updatePassword, userId={}", request.getId());
+
+            UUID userId = UUID.fromString(request.getId());
+            User user = _userService.updatePassword(userId, request.getPassword());
+
+            if (user == null) {
+                _log.warn("RPC updatePassword, user not found for userId={}", request.getId());
+                return UpdatePasswordRpcResponse.newBuilder()
+                        .setSuccess(false)
+                        .build();
+            }
+
+            return UpdatePasswordRpcResponse.newBuilder()
+                    .setEmail(user.getEmail())
+                    .setId(user.getId().toString())
+                    .setSuccess(true)
+                    .build();
+
+        } catch (Exception e) {
+            _log.error("RPC updatePassword failed for userId={}", request.getId(), e);
+            throw Status.UNKNOWN.withDescription(e.getMessage()).asRuntimeException();
+        }
+    }
+
     private User buildUserFromRequest(CreateUserRequest request) {
         User user = new User();
         user.setEmail(request.getEmail());

@@ -17,7 +17,7 @@ public interface IUserService {
     boolean existsByEmail(String email);
     boolean deleteUser(UUID id);
     User updateUser(UUID id, UpdateUserRequest request);
-
+    User updatePassword(UUID id, String newPassword);
     User save(User entity);
     List<User> saveAll(List<User> entities);
     List<User> getActivedUser(int page, int size, String sort, String sortDirection);

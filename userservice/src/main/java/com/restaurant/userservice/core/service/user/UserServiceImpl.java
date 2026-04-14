@@ -145,4 +145,17 @@ public class UserServiceImpl implements IUserService {
         user.setIsVerified(true);
         return save(user);
     }
+
+    @Override
+    public User updatePassword(UUID id, String newPassword) {
+        User user = findById(id);
+
+        if (user == null) {
+            _log.warn("updatePassword, user not found with id={}", id);
+            return null;
+        }
+
+        user.setPassword(newPassword);
+        return save(user);
+    }
 }

@@ -1,15 +1,18 @@
 package com.restaurant.authservice.utils;
 
+import com.restaurant.authservice.core.service.authoutbox.AuthOutboxService;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
+
 
 @Component
 public class Utils {
     private static MessageSource _messageSource = null;
 
     public Utils(
-            MessageSource _msgSource
+            MessageSource _msgSource,
+            AuthOutboxService authOutboxService
     ){
         this._messageSource = _msgSource;
     }

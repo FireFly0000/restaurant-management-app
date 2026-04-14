@@ -11,6 +11,7 @@ import javax.crypto.SecretKey;
 @Data
 @Configuration
 public class AuthServiceProperties {
+    private String frontendBaseUrl;
     private Jwt jwt;
     private Blacklist blacklist;
     private Redis redis;

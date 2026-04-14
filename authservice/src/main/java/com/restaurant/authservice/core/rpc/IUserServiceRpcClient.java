@@ -11,4 +11,5 @@ public interface IUserServiceRpcClient {
     FoundUserResponse findByEmail(String email);
     FoundUserResponse findById(String id);
     VerifyAccountRpcResponse verifyAccount(VerifyAccountRpcRequest request);
+    UpdatePasswordRpcResponse updatePassword(UpdatePasswordRpcRequest request);
 }

@@ -196,6 +196,7 @@ logging:
 # Application-specific configuration
 app:
   auth:
+    frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:8081}
     # Password policy
     password:
       min-length: 8
