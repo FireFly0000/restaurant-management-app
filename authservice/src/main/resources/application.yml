@@ -64,18 +64,19 @@ spring:
 
   # Kafka Configuration
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
 
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer
       acks: all
-      retries: 3
       properties:
+        schema.registry.url: ${SCHEMA_REGISTRY_HOST:http://localhost}:${SCHEMA_REGISTRY_PORT:8081}
         enable.idempotence: true
         max.in.flight.requests.per.connection: 5
         retry.backoff.ms: 1000
         delivery.timeout.ms: 120000
+        request.timeout.ms: 10000
         linger.ms: 5
         batch.size: 16384
         buffer.memory: 33554432
@@ -85,10 +86,11 @@ spring:
       group-id: auth-service-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializer
       enable-auto-commit: false
       properties:
-        spring.json.trusted.packages: com.restaurant.*
+        schema.registry.url: ${SCHEMA_REGISTRY_HOST:http://localhost}:${SCHEMA_REGISTRY_PORT:8081}
+        derive.type: true
         max.poll.records: 100
         max.poll.interval.ms: 300000
         session.timeout.ms: 45000
@@ -136,8 +138,8 @@ dubbo:
 # JWT Configuration
 jwt:
   secret: ${JWT_SECRET}
-  access-token-expiration: ${JWT_ACCESS_EXPIRATION}  # 1 hour in milliseconds
-  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION}  # 7 days in milliseconds
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION} # 1 hour in milliseconds
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION} # 7 days in milliseconds
 
 # Kafka Topic Names
 kafka:
@@ -194,6 +196,7 @@ logging:
 # Application-specific configuration
 app:
   auth:
+    frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:8081}
     # Password policy
     password:
       min-length: 8
@@ -213,3 +216,25 @@ app:
     cache:
       ttl-seconds: 3600
       prefix: "auth:"
+    #jwt settings
+    jwt:
+      secret: ${JWT_SECRET}
+      access-token-expiration: ${JWT_ACCESS_EXPIRATION} # 1 hour in milliseconds
+      refresh-token-expiration: ${JWT_REFRESH_EXPIRATION} # 7 days in milliseconds
+      verify-account-token-expiration: ${JWT_VERIFY_EXPIRATION} # 15 mins in milliseconds
+      reset-password-token-expiration: ${JWT_RESET_PASSWORD_EXPIRATION} # 15 mins in milliseconds
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+    blacklist:
+      prefix: "blacklist:jwt:"
+    # Outbox settings
+    outbox:
+      core-pool-size: 5
+      max-pool-size: 20
+      queue-capacity: 100
+      thread-name-prefix: "AuthOutboxWorker-"
+      batch-size: 50
+      max-retries: 3
+      lease-seconds: 30
+      batch-timeout-seconds: 30

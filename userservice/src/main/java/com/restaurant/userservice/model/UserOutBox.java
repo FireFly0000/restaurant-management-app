@@ -1,7 +1,19 @@
 package com.restaurant.userservice.model;
 
 import com.restaurant.commons.core.enums.OutboxStatus;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.Lob;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
@@ -9,97 +21,49 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "user_outbox", indexes = {
-        @Index(name = "idx_user_outbox_status_nextRetryAt", columnList = "status, next_retry_at")
+        @Index(name = "idx_user_outbox_status_next_retry_at", columnList = "status, next_retry_at")
 })
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserOutBox {
     @Id
     @UuidGenerator(style = UuidGenerator.Style.TIME)
     private UUID id;
+
     private String topic;
     private String key;
+    private String eventId;
+
     @Lob
+    @Column(nullable = false)
     private byte[] payload;
+
     @Enumerated(EnumType.STRING)
     private OutboxStatus status;
+
     private Integer retry;
     private Instant createdAt;
     private Instant nextRetryAt;
     private String message;
 
-    public UUID getId() {
-        return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
-    }
-
-    public String getTopic() {
-        return topic;
-    }
-
-    public void setTopic(String topic) {
-        this.topic = topic;
-    }
-
-    public String getKey() {
-        return key;
-    }
-
-    public void setKey(String key) {
-        this.key = key;
-    }
-
-    public byte[] getPayload() {
-        return payload;
-    }
-
-    public void setPayload(byte[] payload) {
-        this.payload = payload;
-    }
-
-    public OutboxStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(OutboxStatus status) {
-        this.status = status;
-    }
-
-    public Integer getRetry() {
-        return retry;
-    }
-
-    public void setRetry(Integer retry) {
-        this.retry = retry;
-    }
-
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getNextRetryAt() {
-        return nextRetryAt;
-    }
-
-    public void setNextRetryAt(Instant nextRetryAt) {
-        this.nextRetryAt = nextRetryAt;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
     @PrePersist
-    public void prePersist(){
-        createdAt = Instant.now();
+    public void prePersist() {
+        if (this.createdAt == null) {
+            this.createdAt = Instant.now();
+        }
+        if (this.nextRetryAt == null) {
+            this.nextRetryAt = Instant.now();
+        }
+        if (this.retry == null) {
+            this.retry = 0;
+        }
+        if (this.status == null) {
+            this.status = OutboxStatus.PENDING;
+        }
+        if (this.eventId == null || this.eventId.isBlank()) {
+            this.eventId = UUID.randomUUID().toString();
+        }
     }
 }

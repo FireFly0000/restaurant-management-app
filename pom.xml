@@ -22,6 +22,8 @@
         <module>apigateway</module>
         <module>userservice</module>
         <module>authservice</module>
+        <module>notificationservice</module>
+        <module>storageservice</module>
     </modules>
 
     <properties>
@@ -53,6 +55,9 @@
         <postgresql.version>42.7.8</postgresql.version>
         <lombok.version>1.18.42</lombok.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
+
+        <!-- AWS SDK -->
+        <awssdk-s3.version>2.42.8</awssdk-s3.version>
     </properties>
 
     <repositories>
@@ -183,6 +188,12 @@
                 <artifactId>kafka-protobuf-serializer</artifactId>
                 <version>${kafka-protobuf-serializer.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>software.amazon.awssdk</groupId>
+                <artifactId>s3</artifactId>
+                <version>${awssdk-s3.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -192,6 +203,30 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
+<!--        <dependency>
+            <groupId>com.restaurant</groupId>
+            <artifactId>commons</artifactId>
+        </dependency>-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context-support</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-commons</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.angus</groupId>
+            <artifactId>jakarta.mail</artifactId>
         </dependency>
     </dependencies>
 
@@ -233,6 +268,6 @@
                     <version>${protobuf-maven-plugin.version}</version>
                 </plugin>
             </plugins>
-        </pluginManagement>
+        </pluginManagement><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><configuration><source>21</source><target>21</target></configuration></plugin></plugins>
     </build>
 </project>

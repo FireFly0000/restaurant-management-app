@@ -9,6 +9,7 @@ import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -16,8 +17,10 @@ import java.util.Date;
 @EqualsAndHashCode(callSuper = true)
 public class User extends BaseEntity {
     @Id
+    @GeneratedValue
     @UuidGenerator(style = UuidGenerator.Style.TIME)
-    private Long id;
+    @Column(nullable = false, updatable = false)
+    private UUID id;
 
     @Enumerated(EnumType.STRING)
     private UserType userType;
@@ -25,7 +28,7 @@ public class User extends BaseEntity {
     private String email;
     @Column(nullable = false)
     private String password;
-    private LocalDateTime birhtDate;
+    private LocalDateTime birthDate;
     @Column(unique = true, nullable = false)
     private String phoneNumber;
     private String firstName;
@@ -33,6 +36,7 @@ public class User extends BaseEntity {
     private String avatarUrl;
     private Boolean isActive;
     private Boolean isVerified;
+    private Boolean isDeleted;
 
     @PrePersist
     private void prePersist(){

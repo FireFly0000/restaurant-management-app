@@ -9,7 +9,9 @@ import java.util.List;
 public class Constant {
     /* REQUEST HEADER / gRPC METADATA */
     public static final String H_USER_ID = "X-User-Id";
+    public static final String H_ACCESS_TOKEN = "X-Access-Token";
     public static final String H_FORWARDED_FOR = "X-Forwarded-For";
+    public static final String H_EVENT_ID = "X-Event-Id";
     /* COMMON */
     public static final String DEFAULT_ZONE = "Asia/Ho_Chi_Minh";
     public static final String USER_ID = "USER_ID";
@@ -28,8 +30,15 @@ public class Constant {
     public static final String SOURCE_VALIDATIONS_CLASSPATH = "classpath:i18n/validation";
     public static final String DLT = ".DLT";
     /* PUBLIC API */
-    public static final List<Pair<String, String>> PUBLIC_ENDPOINT = Collections.singletonList(
-            Pair.of(String.format("%s/auth/sign-in", API_V1_PREFIX), HTTP_POST)
+    public static final List<Pair<String, String>> PUBLIC_ENDPOINT = List.of(
+            Pair.of(String.format("%s/auth/sign-in", API_V1_PREFIX), HTTP_POST),
+            Pair.of(String.format("%s/auth/sign-up", API_V1_PREFIX), HTTP_POST),
+            Pair.of(String.format("%s/auth/sign-out", API_V1_PREFIX), HTTP_POST),
+            Pair.of(String.format("%s/auth/refresh-token", API_V1_PREFIX), HTTP_POST),
+            Pair.of(String.format("%s/auth/verify", API_V1_PREFIX), HTTP_GET),
+            Pair.of(String.format("%s/auth/resend", API_V1_PREFIX), HTTP_POST),
+            Pair.of(String.format("%s/auth/forgot-password", API_V1_PREFIX), HTTP_POST),
+            Pair.of(String.format("%s/auth/reset-password", API_V1_PREFIX), HTTP_POST)
     );
 
     /* ERROR CODE */
@@ -40,6 +49,7 @@ public class Constant {
     public static final String RES0004 = "RES0004"; // Timeout Error (Gateway/DB timeout)
     public static final String RES0005 = "RES0005"; // JSON Processing/Parsing Error
     public static final String RES0006 = "RES0006"; // Email Sender Error
+    public static final String RES0007 = "RES0007"; //Downstream service error (RPC)
 
     // 1xxx: INPUT VALIDATION
     public static final String RES1001 = "RES1001"; // Parameter Invalid
@@ -58,8 +68,12 @@ public class Constant {
     public static final String RES3002 = "RES3002"; // Resource Already Exists
     public static final String RES3003 = "RES3003"; // Action Isn't Allowed
     public static final String RES3004 = "RES3004"; // The Payload of notification is invalid
-    public static final String RES3005 = "RES3005"; // Resource couldn't be saved.
+    public static final String RES3005 = "RES3005"; // Bad Request
+    public static final String RES3006 = "RES3006"; // Resource couldn't be saved.
+    public static final String RES3007 = "RES3007"; // Service unavailable
+    public static final String RES3008 = "RES3008"; // Unauthorized user
+    public static final String RES3009 = "RES3009"; // Resource couldn't be saved.
+    public static final String RES3010 = "RES3010"; // Resource couldn't be deleted.
 
     /* TASK */
-
 }
