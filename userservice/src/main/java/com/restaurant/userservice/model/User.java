@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.UuidGenerator;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.Date;
 import java.util.UUID;
 
@@ -28,7 +28,7 @@ public class User extends BaseEntity {
     private String email;
     @Column(nullable = false)
     private String password;
-    private LocalDateTime birthDate;
+    private LocalDate birthDate;
     @Column(unique = true, nullable = false)
     private String phoneNumber;
     private String firstName;

@@ -1,6 +1,7 @@
 package com.restaurant.userservice.core.service.user;
 
-import com.restaurant.userservice.core.service.user.dto.UpdateUserRequest;
+import com.restaurant.userservice.core.service.user.dto.UpdateUserInfoRequest;
+import com.restaurant.userservice.core.service.user.dto.UpdateUserInfoResponse;
 import com.restaurant.userservice.model.User;
 
 import java.util.List;
@@ -16,7 +17,7 @@ public interface IUserService {
     boolean existsByPhoneNumber(String phoneNumber);
     boolean existsByEmail(String email);
     boolean deleteUser(UUID id);
-    User updateUser(UUID id, UpdateUserRequest request);
+    UpdateUserInfoResponse updateUserInfo(UUID id, UpdateUserInfoRequest request);
     User updatePassword(UUID id, String newPassword);
     User save(User entity);
     List<User> saveAll(List<User> entities);

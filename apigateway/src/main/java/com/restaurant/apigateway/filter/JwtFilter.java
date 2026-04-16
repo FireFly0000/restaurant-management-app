@@ -1,12 +1,10 @@
 package com.restaurant.apigateway.filter;
 
+import com.restaurant.apigateway.core.service.blacklist.IBackListService;
 import com.restaurant.apigateway.core.service.jwt.IJwtService;
 import com.restaurant.commons.constant.Constant;
-import io.jsonwebtoken.Claims;
-import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
-import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
@@ -20,16 +18,20 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
-import java.util.UUID;
 
 @Component
 public class JwtFilter implements GlobalFilter, Ordered {
 
     private final IJwtService _jwtService;
+    private final IBackListService _blackListService;
     private static final AntPathMatcher pathMatcher = new AntPathMatcher();
 
-    public JwtFilter(IJwtService jwtService){
+    public JwtFilter(
+            IJwtService jwtService,
+            IBackListService backListService
+    ){
         this._jwtService = jwtService;
+        this._blackListService = backListService;
     }
 
     /**
@@ -89,8 +91,6 @@ public class JwtFilter implements GlobalFilter, Ordered {
                 .getHeaders()
                 .getFirst(HttpHeaders.AUTHORIZATION);
 
-        System.out.println("MY AUTH TOKEN == " + auth);
-
         if(auth == null || !auth.startsWith("Bearer ")) {
             return unauthorized(exchange);
         }
@@ -101,9 +101,13 @@ public class JwtFilter implements GlobalFilter, Ordered {
             return unauthorized(exchange);
         }
 
-        String userId = _jwtService.extractSubject(token);
+        // ← add blacklist check here
+        if (_blackListService.isBlacklisted(token)) {
+            System.out.println("TOKEN IS BLACKLISTED");
+            return unauthorized(exchange);
+        }
 
-        System.out.println("MY USER ID" + userId);
+        String userId = _jwtService.extractSubject(token);
 
         ServerHttpRequest newReq = exchange.getRequest().mutate()
                 .header(Constant.H_USER_ID, userId)
