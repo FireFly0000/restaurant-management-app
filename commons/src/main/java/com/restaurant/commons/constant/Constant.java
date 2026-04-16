@@ -33,7 +33,6 @@ public class Constant {
     public static final List<Pair<String, String>> PUBLIC_ENDPOINT = List.of(
             Pair.of(String.format("%s/auth/sign-in", API_V1_PREFIX), HTTP_POST),
             Pair.of(String.format("%s/auth/sign-up", API_V1_PREFIX), HTTP_POST),
-            Pair.of(String.format("%s/auth/sign-out", API_V1_PREFIX), HTTP_POST),
             Pair.of(String.format("%s/auth/refresh-token", API_V1_PREFIX), HTTP_POST),
             Pair.of(String.format("%s/auth/verify", API_V1_PREFIX), HTTP_GET),
             Pair.of(String.format("%s/auth/resend", API_V1_PREFIX), HTTP_POST),
@@ -74,6 +73,7 @@ public class Constant {
     public static final String RES3008 = "RES3008"; // Unauthorized user
     public static final String RES3009 = "RES3009"; // Resource couldn't be saved.
     public static final String RES3010 = "RES3010"; // Resource couldn't be deleted.
+    public static final String RES3011 = "RES3011"; //Forbidden Request
 
     /* TASK */
 }

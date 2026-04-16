@@ -27,10 +27,8 @@ public class JwtServiceImpl implements IJwtService {
     @Override
     public boolean isValidToken(String token) {
         if(!isValidJwtTokenFormat(token)){
-            System.out.println("INVALID TOKEN FORMAT");
             return false;
         }
-        System.out.println("TOKEN EXPIRED");
         return !isTokenExpired(token);
     }
 
