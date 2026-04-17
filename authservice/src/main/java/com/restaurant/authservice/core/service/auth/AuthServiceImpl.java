@@ -140,7 +140,11 @@ public class AuthServiceImpl implements IAuthService {
             boolean emailExists = _userServiceRpcClient.existsByEmail(request.getEmail());
             if (emailExists) {
                 _log.warn("Registration failed: Email already exists - {}", request.getEmail());
-                throw new AppException("auth.signup.email_exists", Constant.RES3006, HttpStatus.BAD_REQUEST.name());
+                throw new AppException(
+                        "auth.signup.email_exists",
+                        Constant.RES3006,
+                        HttpStatus.BAD_REQUEST.name()
+                );
             }
 
             _log.info("Checking if phone number exists: {}", request.getPhoneNumber());

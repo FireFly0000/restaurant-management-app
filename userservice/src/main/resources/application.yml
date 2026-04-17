@@ -128,7 +128,6 @@ dubbo:
       group: DUBBO_GROUP
     use-as-config-center: false
     use-as-metadata-center: false
-    register-mode: instance
 
   protocol:
     name: tri

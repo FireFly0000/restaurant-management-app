@@ -3,9 +3,12 @@ package com.restaurant.userservice.core.service.user;
 import com.restaurant.commons.constant.Constant;
 import com.restaurant.commons.exception.AppException;
 import com.restaurant.userservice.core.repository.IUserRepository;
+import com.restaurant.userservice.core.service.user.dto.UpdatePhoneNumberRequest;
+import com.restaurant.userservice.core.service.user.dto.UpdatePhoneNumberResponse;
 import com.restaurant.userservice.core.service.user.dto.UpdateUserInfoRequest;
 import com.restaurant.userservice.core.service.user.dto.UpdateUserInfoResponse;
 import com.restaurant.userservice.model.User;
+import com.restaurant.userservice.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -189,5 +192,39 @@ public class UserServiceImpl implements IUserService {
 
         user.setPassword(newPassword);
         return save(user);
+    }
+
+    @Override
+    public UpdatePhoneNumberResponse updatePhoneNumber(UUID userId, UpdatePhoneNumberRequest request) {
+        _log.info("updatePhoneNumber, userId={}", userId);
+
+        User user = _userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(
+                        Utils.getMessage("user.not_found"),
+                        Constant.RES3008,
+                        HttpStatus.NOT_FOUND.name()
+                ));
+
+        if (_userRepository.existsByPhoneNumber(request.getPhoneNumber())) {
+            throw new AppException(
+                    Utils.getMessage("user.update.phone.already_exists"),
+                    Constant.RES3002,
+                    HttpStatus.CONFLICT.name()
+            );
+        }
+
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setUpdatedAt(new Date());
+        _userRepository.save(user);
+
+        _log.info("updatePhoneNumber, updated successfully for userId={}", userId);
+
+        return UpdatePhoneNumberResponse.builder()
+                .id(user.getId().toString())
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .phoneNumber(user.getPhoneNumber())
+                .build();
     }
 }
