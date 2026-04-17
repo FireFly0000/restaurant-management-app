@@ -73,7 +73,7 @@ public class Constant {
     public static final String RES3008 = "RES3008"; // Unauthorized user
     public static final String RES3009 = "RES3009"; // Resource couldn't be saved.
     public static final String RES3010 = "RES3010"; // Resource couldn't be deleted.
-    public static final String RES3011 = "RES3011"; //Forbidden Request
+    public static final String RES3011 = "RES3011"; // Forbidden Request
 
     /* TASK */
 }

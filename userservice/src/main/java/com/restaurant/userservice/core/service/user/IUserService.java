@@ -1,5 +1,7 @@
 package com.restaurant.userservice.core.service.user;
 
+import com.restaurant.userservice.core.service.user.dto.UpdatePhoneNumberRequest;
+import com.restaurant.userservice.core.service.user.dto.UpdatePhoneNumberResponse;
 import com.restaurant.userservice.core.service.user.dto.UpdateUserInfoRequest;
 import com.restaurant.userservice.core.service.user.dto.UpdateUserInfoResponse;
 import com.restaurant.userservice.model.User;
@@ -25,4 +27,5 @@ public interface IUserService {
     List<User> getAllUser(int page, int size, String sort, String sortDirection);
     List<User> getUsersByIds(List<UUID> ids);
     User verifyAccount(UUID id);
+    UpdatePhoneNumberResponse updatePhoneNumber(UUID userId, UpdatePhoneNumberRequest request);
 }
